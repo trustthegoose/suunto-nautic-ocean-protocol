@@ -17,6 +17,8 @@ downloading its dives, and where each piece of dive data lives.
 - **[cloud-matched]** a `/Summary` field found by matching every cloud dive-header number to
   the raw `/Summary` bytes (same offset on every dive of that watch). 2026-10-06, 6 dives
   (2 Nautic, 4 Ocean), by a matching script. Offsets not yet checked on all dives.
+- **[schema]** stated by the watch's own per-dive `/Logbook/byId/<id>/Descriptors` schema
+  (field names, types, enums, group ids), fetched 2026-10-07 from both watches.
 - **[unknown]** not established; treat as open.
 
 Related: deepsealabs/libdc-swift#29 and #56-#61, libdivecomputer/libdivecomputer#73.
