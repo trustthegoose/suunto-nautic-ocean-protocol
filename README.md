@@ -18,3 +18,7 @@ Corrections and additions are welcome, especially from other watches, firmware v
 - A fix you can show: open a pull request that changes the map and states the evidence (a trace, a capture, a cloud file, driver code), with the matching evidence tag.
 
 Please don't post watch serial numbers, real GPS positions or other personal data; use placeholders such as `<serial>`.
+
+## License
+
+[CC0 1.0](LICENSE): public domain. Use, copy and adapt anything here for any purpose, no credit needed.
