@@ -1,0 +1,460 @@
+== GRP 0x21 (163 fields)
+   +0       40 local64                                                               Samples+TimelineSample.TimeISO8601
+   +8       44 d0                                                                    <delta of 43>
+   +8      125 uint32                                                                DiveHeader.RelativeTimestamp
+   +12     126 float32,precision=1                                                   DiveHeader.SurfaceTime
+   +16     127 float32,precision=1                                                   DiveHeader.DepthThresholdWithWaterContact
+   +20     128 float32,precision=1                                                   DiveHeader.DepthThresholdWithoutWaterContact
+   +24     129 int32                                                                 DiveHeader.DeactivationTimeout
+   +28     130 int32                                                                 DiveHeader.DiveInSeries
+   +32     131 enum:0=Off,1=Suunto RGBM,2=Buhlmann                                   DiveHeader.Algorithm
+   +33     132 int16                                                                 DiveHeader.Altitude
+   +35     133 int16                                                                 DiveHeader.Conservatism
+   +37     134 int16                                                                 DiveHeader.HighGf
+   +39     135 int16                                                                 DiveHeader.LowGf
+   +41     136 int32                                                                 DiveHeader.SafetyStopTime
+   +45     137 enum:3=3.0,6=6.0                                                      DiveHeader.LastDecoStopDepth
+   +46     138 bool                                                                  DiveHeader.AscentModeStepped
+   +47     139 bool                                                                  DiveHeader.OOAM
+   +48     140 enum:0=Fresh,1=EN13319,2=Salt                                         DiveHeader.WaterType
+   +49     162 int32                                                                 DiveHeader.StartTissue.CNS
+   +53     163 int32                                                                 DiveHeader.StartTissue.OTU
+   +57     169 float32,precision=2                                                   DiveHeader.StartTissue.Nitrogen+Pressure
+         ... x16 (same field repeated)
+   +121    171 float32,precision=2                                                   DiveHeader.StartTissue.Helium+Pressure
+         ... x16 (same field repeated)
+   +185    173 enum:0=OC,1=CCR diluent,2=CCR oxygen,3=Suit                           DiveHeader.Gases+Gas.State
+   +186    174 int16                                                                 DiveHeader.Gases.Gas.Oxygen
+   +188    175 int16                                                                 DiveHeader.Gases.Gas.Helium
+   +190    176 float32,precision=1                                                   DiveHeader.Gases.Gas.PO2
+   +194    179 float32,precision=5                                                   DiveHeader.Gases.Gas.TankSize
+   +198    177 int32                                                                 DiveHeader.Gases.Gas.TransmitterID
+   +202    178 int32                                                                 DiveHeader.Gases.Gas.TransmitterID2
+   +206    180 int32                                                                 DiveHeader.Gases.Gas.TankFillPressure
+   +210    181 int32,nillable=0                                                      DiveHeader.Gases.Gas.StartPressure
+   +214    182 int32,nillable=0                                                      DiveHeader.Gases.Gas.EndPressure
+   +218    183 int32,nillable=0                                                      DiveHeader.Gases.Gas.StartPressure2
+   +222    184 int32,nillable=0                                                      DiveHeader.Gases.Gas.EndPressure2
+   +226    185 float32,precision=6,nillable=-1.0            x/60000,y*60000          DiveHeader.Gases.Gas.AvgVentilation
+   +230    173 enum:0=OC,1=CCR diluent,2=CCR oxygen,3=Suit                           DiveHeader.Gases+Gas.State
+   +231    174 int16                                                                 DiveHeader.Gases.Gas.Oxygen
+   +233    175 int16                                                                 DiveHeader.Gases.Gas.Helium
+   +235    176 float32,precision=1                                                   DiveHeader.Gases.Gas.PO2
+   +239    179 float32,precision=5                                                   DiveHeader.Gases.Gas.TankSize
+   +243    177 int32                                                                 DiveHeader.Gases.Gas.TransmitterID
+   +247    178 int32                                                                 DiveHeader.Gases.Gas.TransmitterID2
+   +251    180 int32                                                                 DiveHeader.Gases.Gas.TankFillPressure
+   +255    181 int32,nillable=0                                                      DiveHeader.Gases.Gas.StartPressure
+   +259    182 int32,nillable=0                                                      DiveHeader.Gases.Gas.EndPressure
+   +263    183 int32,nillable=0                                                      DiveHeader.Gases.Gas.StartPressure2
+   +267    184 int32,nillable=0                                                      DiveHeader.Gases.Gas.EndPressure2
+   +271    185 float32,precision=6,nillable=-1.0            x/60000,y*60000          DiveHeader.Gases.Gas.AvgVentilation
+   +275    173 enum:0=OC,1=CCR diluent,2=CCR oxygen,3=Suit                           DiveHeader.Gases+Gas.State
+   +276    174 int16                                                                 DiveHeader.Gases.Gas.Oxygen
+   +278    175 int16                                                                 DiveHeader.Gases.Gas.Helium
+   +280    176 float32,precision=1                                                   DiveHeader.Gases.Gas.PO2
+   +284    179 float32,precision=5                                                   DiveHeader.Gases.Gas.TankSize
+   +288    177 int32                                                                 DiveHeader.Gases.Gas.TransmitterID
+   +292    178 int32                                                                 DiveHeader.Gases.Gas.TransmitterID2
+   +296    180 int32                                                                 DiveHeader.Gases.Gas.TankFillPressure
+   +300    181 int32,nillable=0                                                      DiveHeader.Gases.Gas.StartPressure
+   +304    182 int32,nillable=0                                                      DiveHeader.Gases.Gas.EndPressure
+   +308    183 int32,nillable=0                                                      DiveHeader.Gases.Gas.StartPressure2
+   +312    184 int32,nillable=0                                                      DiveHeader.Gases.Gas.EndPressure2
+   +316    185 float32,precision=6,nillable=-1.0            x/60000,y*60000          DiveHeader.Gases.Gas.AvgVentilation
+   +320    173 enum:0=OC,1=CCR diluent,2=CCR oxygen,3=Suit                           DiveHeader.Gases+Gas.State
+   +321    174 int16                                                                 DiveHeader.Gases.Gas.Oxygen
+   +323    175 int16                                                                 DiveHeader.Gases.Gas.Helium
+   +325    176 float32,precision=1                                                   DiveHeader.Gases.Gas.PO2
+   +329    179 float32,precision=5                                                   DiveHeader.Gases.Gas.TankSize
+   +333    177 int32                                                                 DiveHeader.Gases.Gas.TransmitterID
+   +337    178 int32                                                                 DiveHeader.Gases.Gas.TransmitterID2
+   +341    180 int32                                                                 DiveHeader.Gases.Gas.TankFillPressure
+   +345    181 int32,nillable=0                                                      DiveHeader.Gases.Gas.StartPressure
+   +349    182 int32,nillable=0                                                      DiveHeader.Gases.Gas.EndPressure
+   +353    183 int32,nillable=0                                                      DiveHeader.Gases.Gas.StartPressure2
+   +357    184 int32,nillable=0                                                      DiveHeader.Gases.Gas.EndPressure2
+   +361    185 float32,precision=6,nillable=-1.0            x/60000,y*60000          DiveHeader.Gases.Gas.AvgVentilation
+   +365    173 enum:0=OC,1=CCR diluent,2=CCR oxygen,3=Suit                           DiveHeader.Gases+Gas.State
+   +366    174 int16                                                                 DiveHeader.Gases.Gas.Oxygen
+   +368    175 int16                                                                 DiveHeader.Gases.Gas.Helium
+   +370    176 float32,precision=1                                                   DiveHeader.Gases.Gas.PO2
+   +374    179 float32,precision=5                                                   DiveHeader.Gases.Gas.TankSize
+   +378    177 int32                                                                 DiveHeader.Gases.Gas.TransmitterID
+   +382    178 int32                                                                 DiveHeader.Gases.Gas.TransmitterID2
+   +386    180 int32                                                                 DiveHeader.Gases.Gas.TankFillPressure
+   +390    181 int32,nillable=0                                                      DiveHeader.Gases.Gas.StartPressure
+   +394    182 int32,nillable=0                                                      DiveHeader.Gases.Gas.EndPressure
+   +398    183 int32,nillable=0                                                      DiveHeader.Gases.Gas.StartPressure2
+   +402    184 int32,nillable=0                                                      DiveHeader.Gases.Gas.EndPressure2
+   +406    185 float32,precision=6,nillable=-1.0            x/60000,y*60000          DiveHeader.Gases.Gas.AvgVentilation
+   +410    173 enum:0=OC,1=CCR diluent,2=CCR oxygen,3=Suit                           DiveHeader.Gases+Gas.State
+   +411    174 int16                                                                 DiveHeader.Gases.Gas.Oxygen
+   +413    175 int16                                                                 DiveHeader.Gases.Gas.Helium
+   +415    176 float32,precision=1                                                   DiveHeader.Gases.Gas.PO2
+   +419    179 float32,precision=5                                                   DiveHeader.Gases.Gas.TankSize
+   +423    177 int32                                                                 DiveHeader.Gases.Gas.TransmitterID
+   +427    178 int32                                                                 DiveHeader.Gases.Gas.TransmitterID2
+   +431    180 int32                                                                 DiveHeader.Gases.Gas.TankFillPressure
+   +435    181 int32,nillable=0                                                      DiveHeader.Gases.Gas.StartPressure
+   +439    182 int32,nillable=0                                                      DiveHeader.Gases.Gas.EndPressure
+   +443    183 int32,nillable=0                                                      DiveHeader.Gases.Gas.StartPressure2
+   +447    184 int32,nillable=0                                                      DiveHeader.Gases.Gas.EndPressure2
+   +451    185 float32,precision=6,nillable=-1.0            x/60000,y*60000          DiveHeader.Gases.Gas.AvgVentilation
+   +455    173 enum:0=OC,1=CCR diluent,2=CCR oxygen,3=Suit                           DiveHeader.Gases+Gas.State
+   +456    174 int16                                                                 DiveHeader.Gases.Gas.Oxygen
+   +458    175 int16                                                                 DiveHeader.Gases.Gas.Helium
+   +460    176 float32,precision=1                                                   DiveHeader.Gases.Gas.PO2
+   +464    179 float32,precision=5                                                   DiveHeader.Gases.Gas.TankSize
+   +468    177 int32                                                                 DiveHeader.Gases.Gas.TransmitterID
+   +472    178 int32                                                                 DiveHeader.Gases.Gas.TransmitterID2
+   +476    180 int32                                                                 DiveHeader.Gases.Gas.TankFillPressure
+   +480    181 int32,nillable=0                                                      DiveHeader.Gases.Gas.StartPressure
+   +484    182 int32,nillable=0                                                      DiveHeader.Gases.Gas.EndPressure
+   +488    183 int32,nillable=0                                                      DiveHeader.Gases.Gas.StartPressure2
+   +492    184 int32,nillable=0                                                      DiveHeader.Gases.Gas.EndPressure2
+   +496    185 float32,precision=6,nillable=-1.0            x/60000,y*60000          DiveHeader.Gases.Gas.AvgVentilation
+   +500    173 enum:0=OC,1=CCR diluent,2=CCR oxygen,3=Suit                           DiveHeader.Gases+Gas.State
+   +501    174 int16                                                                 DiveHeader.Gases.Gas.Oxygen
+   +503    175 int16                                                                 DiveHeader.Gases.Gas.Helium
+   +505    176 float32,precision=1                                                   DiveHeader.Gases.Gas.PO2
+   +509    179 float32,precision=5                                                   DiveHeader.Gases.Gas.TankSize
+   +513    177 int32                                                                 DiveHeader.Gases.Gas.TransmitterID
+   +517    178 int32                                                                 DiveHeader.Gases.Gas.TransmitterID2
+   +521    180 int32                                                                 DiveHeader.Gases.Gas.TankFillPressure
+   +525    181 int32,nillable=0                                                      DiveHeader.Gases.Gas.StartPressure
+   +529    182 int32,nillable=0                                                      DiveHeader.Gases.Gas.EndPressure
+   +533    183 int32,nillable=0                                                      DiveHeader.Gases.Gas.StartPressure2
+   +537    184 int32,nillable=0                                                      DiveHeader.Gases.Gas.EndPressure2
+   +541    185 float32,precision=6,nillable=-1.0            x/60000,y*60000          DiveHeader.Gases.Gas.AvgVentilation
+   +545    141 float32,precision=2                                                   DiveHeader.Setpoint.Low
+   +549    142 float32,precision=2                                                   DiveHeader.Setpoint.High
+   +553    143 int8                                                                  DiveHeader.Setpoint.SwitchDepthLow
+   +554    144 int8                                                                  DiveHeader.Setpoint.SwitchDepthHigh
+   +555    145 bool                                                                  DiveHeader.Setpoint.SetpointIsAutomatic
+   +556    146 bool                                                                  DiveHeader.Setpoint.SetpointIsCustom
+   +557    147 float32,precision=2                                                   DiveHeader.Setpoint.Custom
+   record length from schema: 561 B
+== GRP 0x22 (199 fields)
+   +0       40 local64                                                               Samples+TimelineSample.TimeISO8601
+   +8       44 d0                                                                    <delta of 43>
+   +8      155 int32                                                                 DiveFooter.DesaturationTime
+   +12     156 int32                                                                 DiveFooter.NoFlyTime
+   +16     157 bool                                                                  DiveFooter.DiveRouteEnabled
+   +17     158 float32,nillable=65535                                                DiveFooter.DiveRouteGyroBias.X
+   +21     159 float32,nillable=65535                                                DiveFooter.DiveRouteGyroBias.Y
+   +25     160 float32,nillable=65535                                                DiveFooter.DiveRouteGyroBias.Z
+   +29     161 float32,precision=3,nillable=65535                                    DiveFooter.DiveRouteGyroBias.FigureOfMerit
+   +33     168 bool                                                                  DiveFooter.OOAM
+   +34     164 int32                                                                 DiveFooter.EndTissue.CNS
+   +38     165 int32                                                                 DiveFooter.EndTissue.OTU
+   +42     199 local64,nillable=0                                                    DiveFooter.DiveLocation.Start.DateTime
+   +50     200 int32,nillable=2147483647                    PI*x/(10^7*180),y*10^7*1 DiveFooter.DiveLocation.Start.Latitude
+   +54     201 int32,nillable=2147483647                    PI*x/(10^7*180),y*10^7*1 DiveFooter.DiveLocation.Start.Longitude
+   +58     202 uint16,precision=2,nillable=65535            x/5-1000,(y+1000)*5      DiveFooter.DiveLocation.Start.GPSAltitude
+   +60     203 uint16,nillable=65535                                                 DiveFooter.DiveLocation.Start.Ehpe
+   +62     204 local64,nillable=0                                                    DiveFooter.DiveLocation.Stop.DateTime
+   +70     205 int32,nillable=2147483647                    PI*x/(10^7*180),y*10^7*1 DiveFooter.DiveLocation.Stop.Latitude
+   +74     206 int32,nillable=2147483647                    PI*x/(10^7*180),y*10^7*1 DiveFooter.DiveLocation.Stop.Longitude
+   +78     207 uint16,precision=2,nillable=65535            x/5-1000,(y+1000)*5      DiveFooter.DiveLocation.Stop.GPSAltitude
+   +80     208 uint16,nillable=65535                                                 DiveFooter.DiveLocation.Stop.Ehpe
+   +82     212 int32,nillable=2147483647                    PI*x/(10^7*180),y*10^7*1 DiveFooter.LastKnownCoordinates.Latitude
+   +86     213 int32,nillable=2147483647                    PI*x/(10^7*180),y*10^7*1 DiveFooter.LastKnownCoordinates.Longitude
+   +90     170 float32,precision=2                                                   DiveFooter.EndTissue.Nitrogen+Pressure
+         ... x16 (same field repeated)
+   +154    172 float32,precision=2                                                   DiveFooter.EndTissue.Helium+Pressure
+         ... x16 (same field repeated)
+   +218    166 uint16                                                                DiveFooter.TissueLevel.Nitrogen+Level
+         ... x16 (same field repeated)
+   +250    167 uint16                                                                DiveFooter.TissueLevel.Helium+Level
+         ... x16 (same field repeated)
+   +282    186 enum:0=OC,1=CCR diluent,2=CCR oxygen,3=Suit                           DiveFooter.Gases+Gas.State
+   +283    187 int16                                                                 DiveFooter.Gases.Gas.Oxygen
+   +285    188 int16                                                                 DiveFooter.Gases.Gas.Helium
+   +287    189 float32,precision=1                                                   DiveFooter.Gases.Gas.PO2
+   +291    192 float32,precision=5                                                   DiveFooter.Gases.Gas.TankSize
+   +295    190 int32                                                                 DiveFooter.Gases.Gas.TransmitterID
+   +299    191 int32                                                                 DiveFooter.Gases.Gas.TransmitterID2
+   +303    193 int32                                                                 DiveFooter.Gases.Gas.TankFillPressure
+   +307    194 int32,nillable=0                                                      DiveFooter.Gases.Gas.StartPressure
+   +311    195 int32,nillable=0                                                      DiveFooter.Gases.Gas.EndPressure
+   +315    196 int32,nillable=0                                                      DiveFooter.Gases.Gas.StartPressure2
+   +319    197 int32,nillable=0                                                      DiveFooter.Gases.Gas.EndPressure2
+   +323    198 float32,precision=6,nillable=-1.0            x/60000,y*60000          DiveFooter.Gases.Gas.AvgVentilation
+   +327    186 enum:0=OC,1=CCR diluent,2=CCR oxygen,3=Suit                           DiveFooter.Gases+Gas.State
+   +328    187 int16                                                                 DiveFooter.Gases.Gas.Oxygen
+   +330    188 int16                                                                 DiveFooter.Gases.Gas.Helium
+   +332    189 float32,precision=1                                                   DiveFooter.Gases.Gas.PO2
+   +336    192 float32,precision=5                                                   DiveFooter.Gases.Gas.TankSize
+   +340    190 int32                                                                 DiveFooter.Gases.Gas.TransmitterID
+   +344    191 int32                                                                 DiveFooter.Gases.Gas.TransmitterID2
+   +348    193 int32                                                                 DiveFooter.Gases.Gas.TankFillPressure
+   +352    194 int32,nillable=0                                                      DiveFooter.Gases.Gas.StartPressure
+   +356    195 int32,nillable=0                                                      DiveFooter.Gases.Gas.EndPressure
+   +360    196 int32,nillable=0                                                      DiveFooter.Gases.Gas.StartPressure2
+   +364    197 int32,nillable=0                                                      DiveFooter.Gases.Gas.EndPressure2
+   +368    198 float32,precision=6,nillable=-1.0            x/60000,y*60000          DiveFooter.Gases.Gas.AvgVentilation
+   +372    186 enum:0=OC,1=CCR diluent,2=CCR oxygen,3=Suit                           DiveFooter.Gases+Gas.State
+   +373    187 int16                                                                 DiveFooter.Gases.Gas.Oxygen
+   +375    188 int16                                                                 DiveFooter.Gases.Gas.Helium
+   +377    189 float32,precision=1                                                   DiveFooter.Gases.Gas.PO2
+   +381    192 float32,precision=5                                                   DiveFooter.Gases.Gas.TankSize
+   +385    190 int32                                                                 DiveFooter.Gases.Gas.TransmitterID
+   +389    191 int32                                                                 DiveFooter.Gases.Gas.TransmitterID2
+   +393    193 int32                                                                 DiveFooter.Gases.Gas.TankFillPressure
+   +397    194 int32,nillable=0                                                      DiveFooter.Gases.Gas.StartPressure
+   +401    195 int32,nillable=0                                                      DiveFooter.Gases.Gas.EndPressure
+   +405    196 int32,nillable=0                                                      DiveFooter.Gases.Gas.StartPressure2
+   +409    197 int32,nillable=0                                                      DiveFooter.Gases.Gas.EndPressure2
+   +413    198 float32,precision=6,nillable=-1.0            x/60000,y*60000          DiveFooter.Gases.Gas.AvgVentilation
+   +417    186 enum:0=OC,1=CCR diluent,2=CCR oxygen,3=Suit                           DiveFooter.Gases+Gas.State
+   +418    187 int16                                                                 DiveFooter.Gases.Gas.Oxygen
+   +420    188 int16                                                                 DiveFooter.Gases.Gas.Helium
+   +422    189 float32,precision=1                                                   DiveFooter.Gases.Gas.PO2
+   +426    192 float32,precision=5                                                   DiveFooter.Gases.Gas.TankSize
+   +430    190 int32                                                                 DiveFooter.Gases.Gas.TransmitterID
+   +434    191 int32                                                                 DiveFooter.Gases.Gas.TransmitterID2
+   +438    193 int32                                                                 DiveFooter.Gases.Gas.TankFillPressure
+   +442    194 int32,nillable=0                                                      DiveFooter.Gases.Gas.StartPressure
+   +446    195 int32,nillable=0                                                      DiveFooter.Gases.Gas.EndPressure
+   +450    196 int32,nillable=0                                                      DiveFooter.Gases.Gas.StartPressure2
+   +454    197 int32,nillable=0                                                      DiveFooter.Gases.Gas.EndPressure2
+   +458    198 float32,precision=6,nillable=-1.0            x/60000,y*60000          DiveFooter.Gases.Gas.AvgVentilation
+   +462    186 enum:0=OC,1=CCR diluent,2=CCR oxygen,3=Suit                           DiveFooter.Gases+Gas.State
+   +463    187 int16                                                                 DiveFooter.Gases.Gas.Oxygen
+   +465    188 int16                                                                 DiveFooter.Gases.Gas.Helium
+   +467    189 float32,precision=1                                                   DiveFooter.Gases.Gas.PO2
+   +471    192 float32,precision=5                                                   DiveFooter.Gases.Gas.TankSize
+   +475    190 int32                                                                 DiveFooter.Gases.Gas.TransmitterID
+   +479    191 int32                                                                 DiveFooter.Gases.Gas.TransmitterID2
+   +483    193 int32                                                                 DiveFooter.Gases.Gas.TankFillPressure
+   +487    194 int32,nillable=0                                                      DiveFooter.Gases.Gas.StartPressure
+   +491    195 int32,nillable=0                                                      DiveFooter.Gases.Gas.EndPressure
+   +495    196 int32,nillable=0                                                      DiveFooter.Gases.Gas.StartPressure2
+   +499    197 int32,nillable=0                                                      DiveFooter.Gases.Gas.EndPressure2
+   +503    198 float32,precision=6,nillable=-1.0            x/60000,y*60000          DiveFooter.Gases.Gas.AvgVentilation
+   +507    186 enum:0=OC,1=CCR diluent,2=CCR oxygen,3=Suit                           DiveFooter.Gases+Gas.State
+   +508    187 int16                                                                 DiveFooter.Gases.Gas.Oxygen
+   +510    188 int16                                                                 DiveFooter.Gases.Gas.Helium
+   +512    189 float32,precision=1                                                   DiveFooter.Gases.Gas.PO2
+   +516    192 float32,precision=5                                                   DiveFooter.Gases.Gas.TankSize
+   +520    190 int32                                                                 DiveFooter.Gases.Gas.TransmitterID
+   +524    191 int32                                                                 DiveFooter.Gases.Gas.TransmitterID2
+   +528    193 int32                                                                 DiveFooter.Gases.Gas.TankFillPressure
+   +532    194 int32,nillable=0                                                      DiveFooter.Gases.Gas.StartPressure
+   +536    195 int32,nillable=0                                                      DiveFooter.Gases.Gas.EndPressure
+   +540    196 int32,nillable=0                                                      DiveFooter.Gases.Gas.StartPressure2
+   +544    197 int32,nillable=0                                                      DiveFooter.Gases.Gas.EndPressure2
+   +548    198 float32,precision=6,nillable=-1.0            x/60000,y*60000          DiveFooter.Gases.Gas.AvgVentilation
+   +552    186 enum:0=OC,1=CCR diluent,2=CCR oxygen,3=Suit                           DiveFooter.Gases+Gas.State
+   +553    187 int16                                                                 DiveFooter.Gases.Gas.Oxygen
+   +555    188 int16                                                                 DiveFooter.Gases.Gas.Helium
+   +557    189 float32,precision=1                                                   DiveFooter.Gases.Gas.PO2
+   +561    192 float32,precision=5                                                   DiveFooter.Gases.Gas.TankSize
+   +565    190 int32                                                                 DiveFooter.Gases.Gas.TransmitterID
+   +569    191 int32                                                                 DiveFooter.Gases.Gas.TransmitterID2
+   +573    193 int32                                                                 DiveFooter.Gases.Gas.TankFillPressure
+   +577    194 int32,nillable=0                                                      DiveFooter.Gases.Gas.StartPressure
+   +581    195 int32,nillable=0                                                      DiveFooter.Gases.Gas.EndPressure
+   +585    196 int32,nillable=0                                                      DiveFooter.Gases.Gas.StartPressure2
+   +589    197 int32,nillable=0                                                      DiveFooter.Gases.Gas.EndPressure2
+   +593    198 float32,precision=6,nillable=-1.0            x/60000,y*60000          DiveFooter.Gases.Gas.AvgVentilation
+   +597    186 enum:0=OC,1=CCR diluent,2=CCR oxygen,3=Suit                           DiveFooter.Gases+Gas.State
+   +598    187 int16                                                                 DiveFooter.Gases.Gas.Oxygen
+   +600    188 int16                                                                 DiveFooter.Gases.Gas.Helium
+   +602    189 float32,precision=1                                                   DiveFooter.Gases.Gas.PO2
+   +606    192 float32,precision=5                                                   DiveFooter.Gases.Gas.TankSize
+   +610    190 int32                                                                 DiveFooter.Gases.Gas.TransmitterID
+   +614    191 int32                                                                 DiveFooter.Gases.Gas.TransmitterID2
+   +618    193 int32                                                                 DiveFooter.Gases.Gas.TankFillPressure
+   +622    194 int32,nillable=0                                                      DiveFooter.Gases.Gas.StartPressure
+   +626    195 int32,nillable=0                                                      DiveFooter.Gases.Gas.EndPressure
+   +630    196 int32,nillable=0                                                      DiveFooter.Gases.Gas.StartPressure2
+   +634    197 int32,nillable=0                                                      DiveFooter.Gases.Gas.EndPressure2
+   +638    198 float32,precision=6,nillable=-1.0            x/60000,y*60000          DiveFooter.Gases.Gas.AvgVentilation
+   +642    148 float32,precision=2                                                   DiveFooter.Setpoint.Low
+   +646    149 float32,precision=2                                                   DiveFooter.Setpoint.High
+   +650    150 int8                                                                  DiveFooter.Setpoint.SwitchDepthLow
+   +651    151 int8                                                                  DiveFooter.Setpoint.SwitchDepthHigh
+   +652    152 bool                                                                  DiveFooter.Setpoint.SetpointIsAutomatic
+   +653    153 bool                                                                  DiveFooter.Setpoint.SetpointIsCustom
+   +654    154 float32,precision=2                                                   DiveFooter.Setpoint.Custom
+   record length from schema: 658 B
+== GRP 0x27 (64 fields)
+   +0       40 local64                                                               Samples+TimelineSample.TimeISO8601
+   +8       44 d0                                                                    <delta of 43>
+   +8      344 enum:0=Move,1=Activity,2=Lap,3=Autolap,4=Poo                          Windows+Window.Type
+   +9      345 int32,nillable=-2147483647                                            Windows.Window.ActivityId
+   +13     346 float32,precision=1,nillable=-16000000                                Windows.Window.Duration
+   +17     347 float32,precision=1,nillable=-16000000                                Windows.Window.Distance
+   +21     348 float32,precision=1,nillable=-16000000                                Windows.Window.DistanceMax
+   +25     349 float32,precision=1,nillable=-16000000                                Windows.Window.Energy
+   +29     350 float32,precision=3,nillable=-16000000                                Windows.Window+Speed.Min
+   +33     351 float32,precision=3,nillable=-16000000                                Windows.Window.Speed.Max
+   +37     352 float32,precision=3,nillable=-16000000                                Windows.Window.Speed.Avg
+   +41     353 float32,precision=3,nillable=-16000000                                Windows.Window+VerticalSpeed.Min
+   +45     354 float32,precision=3,nillable=-16000000                                Windows.Window.VerticalSpeed.Max
+   +49     355 float32,precision=3,nillable=-16000000                                Windows.Window.VerticalSpeed.Avg
+   +53     356 float32,precision=3,nillable=-16000000                                Windows.Window+HR.Min
+   +57     357 float32,precision=3,nillable=-16000000                                Windows.Window.HR.Max
+   +61     358 float32,precision=3,nillable=-16000000                                Windows.Window.HR.Avg
+   +65     359 float32,precision=3,nillable=-16000000                                Windows.Window+Cadence.Min
+   +69     360 float32,precision=3,nillable=-16000000                                Windows.Window.Cadence.Max
+   +73     361 float32,precision=3,nillable=-16000000                                Windows.Window.Cadence.Avg
+   +77     362 float32,precision=1,nillable=-16000000                                Windows.Window+Power.Min
+   +81     363 float32,precision=1,nillable=-16000000                                Windows.Window.Power.Max
+   +85     364 float32,precision=1,nillable=-16000000                                Windows.Window.Power.Avg
+   +89     365 float32,precision=1,nillable=-16000000                                Windows.Window+DownhillGrade.Min
+   +93     366 float32,precision=1,nillable=-16000000                                Windows.Window.DownhillGrade.Max
+   +97     367 float32,precision=1,nillable=-16000000                                Windows.Window.DownhillGrade.Avg
+   +101    368 float32,precision=1,nillable=-16000000                                Windows.Window+Temperature.Min
+   +105    369 float32,precision=1,nillable=-16000000                                Windows.Window.Temperature.Max
+   +109    370 float32,precision=1,nillable=-16000000                                Windows.Window.Temperature.Avg
+   +113    371 float32,precision=1,nillable=-16000000                                Windows.Window+Altitude.Min
+   +117    372 float32,precision=1,nillable=-16000000                                Windows.Window.Altitude.Max
+   +121    373 float32,precision=1,nillable=-16000000                                Windows.Window.Altitude.Avg
+   +125    374 float32,precision=1,nillable=-16000000                                Windows.Window.Ascent
+   +129    375 float32,precision=1,nillable=-16000000                                Windows.Window.AscentTime
+   +133    376 float32,precision=1,nillable=-16000000                                Windows.Window.Descent
+   +137    377 float32,precision=1,nillable=-16000000                                Windows.Window.DescentMax
+   +141    378 float32,precision=1,nillable=-16000000                                Windows.Window.DescentTime
+   +145    379 float32,precision=1,nillable=-16000000                                Windows.Window.RecoveryTime
+   +149    380 float32,precision=1,nillable=-16000000                                Windows.Window+Swolf.Min
+   +153    381 float32,precision=1,nillable=-16000000                                Windows.Window.Swolf.Max
+   +157    382 float32,precision=1,nillable=-16000000                                Windows.Window.Swolf.Avg
+   +161    383 float32,precision=1,nillable=-16000000                                Windows.Window+Strokes.Min
+   +165    384 float32,precision=1,nillable=-16000000                                Windows.Window.Strokes.Max
+   +169    385 float32,precision=1,nillable=-16000000                                Windows.Window.Strokes.Avg
+   +173    386 float32,precision=3,nillable=-16000000                                Windows.Window+StrokeRate.Min
+   +177    387 float32,precision=3,nillable=-16000000                                Windows.Window.StrokeRate.Max
+   +181    388 float32,precision=3,nillable=-16000000                                Windows.Window.StrokeRate.Avg
+   +185    389 enum:1=Rest,2=Butterfly,3=Back,4=Breast,5=Fr                          Windows.Window.SwimStyle
+   +186    390 float32,precision=2,nillable=-16000000                                Windows.Window+Depth.Min
+   +190    391 float32,precision=2,nillable=-16000000                                Windows.Window.Depth.Max
+   +194    392 float32,precision=2,nillable=-16000000                                Windows.Window.Depth.Avg
+   +198    393 float32,precision=1,nillable=-16000000                                Windows.Window.DiveTime
+   +202    394 float32,precision=1,nillable=-16000000                                Windows.Window.DiveTimeMax
+   +206    395 float32,precision=1,nillable=-16000000                                Windows.Window.DiveRecoveryTime
+   +210    396 uint8                                                                 Windows.Window.DiveInWorkout
+   +211    397 float32,precision=2,nillable=-16000000                                Windows.Window.MaxDepthAverage
+   +215    398 float32,precision=2,nillable=-16000000                                Windows.Window.DepthAverage
+   +219    399 float32,precision=1,nillable=-16000000                                Windows.Window.DiveAscentSpeedMax
+   +223    400 float32,precision=1,nillable=-16000000                                Windows.Window.DiveDescentSpeedMax
+   +227    401 float32,precision=1,nillable=-16000000                                Windows.Window.SwimTurnStartTime
+   +231    402 float32,precision=1,nillable=-16000000                                Windows.Window.SwimTurnStopTime
+   +235    403 enum:0=Warmup,1=Interval,2=Recovery,3=Rest,4                          Windows.Window.IntervalType
+   +236    404 uint16,nillable=0                                                     Windows.Window.IntervalLoopNum
+   +238    405 utf8                                                                  Windows.Window.IntervalNotes
+   record length from schema: ? B
+== GRP 0x25 (110 fields)
+   +0       40 local64                                                               Samples+TimelineSample.TimeISO8601
+   +8       44 d0                                                                    <delta of 43>
+   +8      240 local64                                                               Header.DateTime
+   +16     236 uint32,precision=3                           x/1000,y*1000            Header.Duration
+   +20     237 uint32,precision=3                           x/1000,y*1000            Header.PauseDuration
+   +24     241 uint32,precision=1,nillable=4294967295                                Header.Distance
+   +28     242 uint32,nillable=0                                                     Header.StepCount
+   +32     243 uint32,nillable=0                                                     Header.StepCountSupervised
+   +36     239 int32                                                                 Header.ActivityType
+   +40     244 float32,precision=1,nillable=0                                        Header.Ascent
+   +44     245 float32,precision=1,nillable=0                                        Header.AscentTime
+   +48     246 float32,precision=1,nillable=0                                        Header.Descent
+   +52     247 float32,precision=1,nillable=0                                        Header.DescentTime
+   +56     248 float32,precision=3                                                   Header.VerticalSpeed
+   +60     249 float32,precision=1                                                   Header.Altitude.Max
+   +64     250 float32,precision=1                                                   Header.Altitude.Min
+   +68     251 float32,precision=1                                                   Header.Energy
+   +72     252 float32,precision=1                                                   Header.EPOC
+   +76     253 float32,precision=1                                                   Header.PeakTrainingEffect
+   +80     254 uint32                                                                Header.RecoveryTime
+   +84     255 float32,precision=1,nillable=0                                        Header.MAXVO2
+   +88     256 uint8,precision=0,nillable=0                                          Header.FitnessAge
+   +89     257 enum:0=NotAvailable,1=VeryPoor,2=Poor,3=Fair                          Header.FitnessAgeClassification
+   +90     258 float32,precision=1,nillable=0                                        Header.TraingingLoadPeak
+   +94     305 int32,nillable=0                                                      Header.MoveType
+   +98     306 bool                                                                  Header.IsSupervised
+   +99     307 enum:0=Unspecified,1=WristLeft,2=WristRight,                          Header.DeviceLocation
+   +100    259 float32,precision=3                                                   Header.HrZones.Zone1Duration
+   +104    260 float32,precision=3                                                   Header.HrZones.Zone2Duration
+   +108    261 float32,precision=3                                                   Header.HrZones.Zone3Duration
+   +112    262 float32,precision=3                                                   Header.HrZones.Zone4Duration
+   +116    263 float32,precision=3                                                   Header.HrZones.Zone5Duration
+   +120    264 float32,precision=3,nillable=0                                        Header.HrZones.Zone2LowerLimit
+   +124    265 float32,precision=3,nillable=0                                        Header.HrZones.Zone3LowerLimit
+   +128    266 float32,precision=3,nillable=0                                        Header.HrZones.Zone4LowerLimit
+   +132    267 float32,precision=3,nillable=0                                        Header.HrZones.Zone5LowerLimit
+   +136    268 float32,precision=3                                                   Header.SpeedZones.Zone1Duration
+   +140    269 float32,precision=3                                                   Header.SpeedZones.Zone2Duration
+   +144    270 float32,precision=3                                                   Header.SpeedZones.Zone3Duration
+   +148    271 float32,precision=3                                                   Header.SpeedZones.Zone4Duration
+   +152    272 float32,precision=3                                                   Header.SpeedZones.Zone5Duration
+   +156    273 float32,precision=3,nillable=0                                        Header.SpeedZones.Zone2LowerLimit
+   +160    274 float32,precision=3,nillable=0                                        Header.SpeedZones.Zone3LowerLimit
+   +164    275 float32,precision=3,nillable=0                                        Header.SpeedZones.Zone4LowerLimit
+   +168    276 float32,precision=3,nillable=0                                        Header.SpeedZones.Zone5LowerLimit
+   +172    277 float32,precision=3                                                   Header.PowerZones.Zone1Duration
+   +176    278 float32,precision=3                                                   Header.PowerZones.Zone2Duration
+   +180    279 float32,precision=3                                                   Header.PowerZones.Zone3Duration
+   +184    280 float32,precision=3                                                   Header.PowerZones.Zone4Duration
+   +188    281 float32,precision=3                                                   Header.PowerZones.Zone5Duration
+   +192    282 float32,precision=3,nillable=0                                        Header.PowerZones.Zone2LowerLimit
+   +196    283 float32,precision=3,nillable=0                                        Header.PowerZones.Zone3LowerLimit
+   +200    284 float32,precision=3,nillable=0                                        Header.PowerZones.Zone4LowerLimit
+   +204    285 float32,precision=3,nillable=0                                        Header.PowerZones.Zone5LowerLimit
+   +208    286 float32,precision=3,nillable=0                                        Header.Personal.MaxHR
+   +212    287 float32,precision=1,nillable=0                                        Header.Targets.Duration
+   +216    288 float32,precision=1,nillable=0                                        Header.Targets.Distance
+   +220    289 enum:0=None,1=Zone1,2=Zone2,3=Zone3,4=Zone4,                          Header.Targets.HeartRateZone
+   +221    290 enum:0=None,1=Zone1,2=Zone2,3=Zone3,4=Zone4,                          Header.Targets.PowerZone
+   +222    291 enum:0=None,1=Zone1,2=Zone2,3=Zone3,4=Zone4,                          Header.Targets.SpeedZone
+   +223    292 float32,precision=1                                                   Header.PoolLength
+   +227    293 uint32                                                                Header.PoolLengths
+   +231    294 uint32,nillable=0                                                     Header.DownhillCount
+   +235    295 uint32,precision=1,nillable=0                                         Header.DownhillDistance
+   +239    296 float32,precision=1,nillable=0                                        Header.DownhillDescent
+   +243    297 float32,precision=3,nillable=65535                                    Header.DownhillSpeed.Avg
+   +247    298 float32,precision=3,nillable=65535                                    Header.DownhillSpeed.Max
+   +251    299 float32,precision=1,nillable=65535                                    Header.DownhillMaxLength
+   +255    300 float32,precision=1,nillable=65535                                    Header.DownhillMaxDescent
+   +259    301 float32,precision=1,nillable=65535                                    Header.DownhillGrade.Max
+   +263    302 float32,precision=1,nillable=0                                        Header.DownhillDuration
+   +267    303 float32,precision=1,nillable=65535                                    Header.DownhillGrade.Avg
+   +271    304 int32,nillable=0                                                      Header.Feeling
+   +275    315 local64                                                               Header.Settings.SgeeEpoTimestamp
+   +283    316 enum:1=GPS,3=GPS+Glonass,65=GPS+Beidou,129=G                          Header.Settings.EnabledNavigationSystems
+   +284    317 bool                                                                  Header.Settings.AutoPause.Enabled
+   +285    318 bool                                                                  Header.Settings.AutoLap.Enabled
+   +286    319 float32,precision=2,nillable=0                                        Header.Settings.AutoLap.Distance
+   +290    320 float32,precision=0,nillable=0                                        Header.Settings.AutoLap.Duration
+   +294    321 enum:0=Altitude,1=Barometer,2=Automatic                               Header.Settings.AltiBaroProfile
+   +295    322 bool                                                                  Header.Settings.FusedAltiUsed
+   +296    323 bool                                                                  Header.Settings.BikePodUsed
+   +297    324 bool                                                                  Header.Settings.PowerPodUsed
+   +298    325 bool                                                                  Header.Settings.FootPodUsed
+   +299    326 float32                                                               Header.Settings.FootPodAutoCalib.Coeff
+   +303    327 bool                                                                  Header.Settings.FootPodAutoCalib.Used
+   +304    328 bool                                                                  Header.Settings.HrUsed
+   +305    308 enum:0=Vaasa                                                          Header.Device.Name
+   +306    309 enum:0=<serial>                                                   Header.Device.SerialNumber
+   +307    311 enum:0=2.55.46                                                        Header.Device.Info.SW
+   +308    310 enum:0=GT_RevX                                                        Header.Device.Info.HW
+   +309    312 uint16,precision=1,nillable=0                x*3.6,y/3.6              Header.Device.Info.BatteryDesignCapacity
+   +311    313 uint16,precision=1,nillable=0                x*3.6,y/3.6              Header.Device.Info.BatteryFullCapacity
+   +313    329 float32,precision=1,nillable=0                                        Header.Temperature.Min
+   +317    330 float32,precision=1,nillable=0                                        Header.Temperature.Max
+   +321    331 float32,precision=1,nillable=-16000000                                Header.DiveTime
+   +325    332 float32,precision=1,nillable=-16000000                                Header.DiveTimeMax
+   +329    333 uint8                                                                 Header.DiveInWorkout
+   +330    334 float32,precision=2,nillable=-16000000                                Header.Depth.Max
+   +334    335 float32,precision=2,nillable=-16000000                                Header.MaxDepthAverage
+   +338    336 float32,precision=2,nillable=-16000000                                Header.DepthAverage
+   +342    337 float32,precision=3                                                   Header.ZoneSenseZones.Zone1Duration
+   +346    338 float32,precision=3                                                   Header.ZoneSenseZones.Zone2Duration
+   +350    339 float32,precision=3                                                   Header.ZoneSenseZones.Zone3Duration
+   +354    340 float32,precision=3,nillable=0                                        Header.ZoneSenseZones.Zone2LowerLimit
+   +358    341 float32,precision=3,nillable=0                                        Header.ZoneSenseZones.Zone3LowerLimit
+   +362    342 enum:0=None,1=Zone1,2=Zone2,3=Zone3                                   Header.Targets.ZoneSenseZones
+   +363    343 bool                                                                  Header.Settings.UserOwned
+   +364    238 utf8                                                                  Header.Activity
+   +?      314 utf8                                                                  Header.Notes
+   record length from schema: ? B
