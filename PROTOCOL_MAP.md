@@ -464,8 +464,9 @@ descent time/distance, vertical speed, header duration, pause duration, average 
 | GPS fix | /Data `0B` | 20 B, includes absolute UTC ms | [driver] |
 | GPS accuracy | /Data `0E` | int8 deltas EHPE/EVPE | [driver] |
 | Battery | /Data `14` | int16 current, u16 mV, u8 % | [driver] |
-| IMU (accel/gyro/mag) | /Data `23` (195-B-status watches) or `22` (141-B) | 9 x int16 after a u32 timestamp | [driver] |
-| Dive-route features | /Data `24` (or `23` on 141-B watches) | 5 x u16, inputs to the app's dead reckoning (the track itself isn't stored) | [driver] |
+| IMU (accel/gyro/mag) | /Data group `23` (Nautic) / `22` (Ocean): the id is assigned in the watch's Descriptors GRP table, so look it up there rather than inferring it from payload size | 10 Hz. `[dt int16][AlgoRelativeTimestamp u32 ms][DiveRouteAcc XYZ][DiveRouteGyro XYZ][DiveRouteMagn XYZ]`, all int16 raw counts (the schema gives no scaling). Accel x 1/4096 = g (median 0.973 / 0.983 g over ~48k samples, Sep 14 AM), gyro x 1/131 = deg/s (~0.01 deg/s when still); scales from the app binary, checked on data. Magnetometer scale and offsets unknown | [driver] [schema] [wire-derived] |
+| Dive-route features | /Data group `24` (Nautic) / `23` (Ocean) | 5 x uint16 `DiveRouteFeatures`, inputs to the app's dead reckoning; meanings unknown. The X/Y/Z route itself is computed by the app, not stored | [driver] [schema] |
+| Gyro bias | /Summary DiveFooter +17/+21/+25 (f32), FigureOfMerit +29 | `DiveRouteGyroBias`; units unclear (1.04/0.31/1.08 on the Nautic vs ~0.01 deg/s measured when still) | [schema] [unknown] |
 | Events | /Data `18` alarm, `19` warning, `1A` notify, `1B` state | `[dt][Type][Active]` | [driver] |
 | Dive state | /Data `1C` | 0 idling, 1 diving, 2 recovering | [driver] |
 | Dive active flag | /Data `1E` | | [driver] |
