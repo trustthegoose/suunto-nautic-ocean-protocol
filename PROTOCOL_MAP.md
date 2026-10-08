@@ -74,6 +74,10 @@ Bluetooth LE GATT  service 61353090-8231-49cc-b57a-886370740041
   with its screen still dark. So the display state is not the indicator: the watch stops
   advertising after a period without motion, and movement restarts advertising without waking
   the screen. How long that period is, and whether it is the ~13 h case, is [unknown].
+  Owner's observation (2026-10-07): away from any diving, the Nautic stops advertising much
+  sooner, roughly an hour or less after its last activity; the daily Mac capture regularly needs
+  a button press plus movement first. Whether the timeout depends on recent dive activity or
+  dive mode is [unknown].
 - Connections from iPad, iPhone and the Mac all work, one at a time.
 - **A watch can be paired with several hosts at once.** Both watches stay paired with the Mac
   and with the iPhone and/or iPad together. Any paired host whose Bluetooth is on may
