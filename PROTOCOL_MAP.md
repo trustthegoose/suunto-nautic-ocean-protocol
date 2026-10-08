@@ -251,7 +251,12 @@ inside the HDLC `7E ... 7E`.
 ### 5.7 What the official app does differently [app]
 
 - Also calls `/Logbook/byId/<id>/Flags` and `/Logbook/UnsynchronisedLogs`, which the
-  driver never does. `/Logbook/UnsynchronisedLogs` is a subscribable value (a counter);
+  driver never does. Both read with a plain GET + short FETCH (reply type `05`, u16):
+  `UnsynchronisedLogs` = 0 and `Flags` = **3** on every dive of both watches with all dives
+  synced through the Suunto app (2026-10-07, 33 dives) [wire]; which bit means "synced"
+  needs an unsynced dive. The app marks a dive synced by writing `Flags` (reported on #29);
+  never write it. Note: the GET binds a handle; ~30 unreleased handles make the watch
+  answer 400 until reconnect [wire]. `/Logbook/UnsynchronisedLogs` is a subscribable value (a counter);
   whether the watch updates it over BLE after a new dive is **[unknown]** (DC Tester's
   auto-download step 7 is testing it).
 - Re-lists /Logbook/Entries twice per sync and fetches /Summary several times per dive.
