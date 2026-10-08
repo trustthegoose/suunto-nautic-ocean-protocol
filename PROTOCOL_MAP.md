@@ -550,7 +550,21 @@ Top level `{"Summary": {"Samples": [...]}, "Data": {"Samples": [...]}}`; every s
 - Whether `/Logbook/UnsynchronisedLogs` notifies over BLE when a new dive is logged.
 - What `/Logbook/byId/<id>/Flags` holds, and whether the app writes to it after a sync.
 - The meaning of the Hello reply, and whether the watch would accept a different identity.
-- Dive retention on the watch (what makes a dive's raw profile unavailable; under study).
+- Dive retention on the watch. As of 2026-10-07:
+  - **Working rule: if `/Logbook/Entries` lists a dive, its raw data is there.** Every listed dive
+    on two watches downloads complete (33/33, exact size check, repeated daily on the oldest
+    dive). Earlier "listed but unavailable" reports traced to tool defects (libdc-swift #56,
+    #59, #60). Disproved only by a listed dive that fails a complete download with a fixed driver.
+  - What removes dives from the list is not established. On one Ocean, all dives before a
+    ~3-month break are gone; cloud records show the last ones before the break were already on
+    the current firmware, so a firmware update doesn't explain that loss, but the watch may have
+    been reset during early connection troubleshooting, so that history can't be attributed.
+    A controlled record runs from 2026-10-03 (daily list captures, oldest-dive downloads,
+    firmware and sync-state checks, with resets and other events logged). A small fixed
+    dive-log area is unlikely (~1 MB per hour-long dive, hundreds fit in a sliver of storage).
+  - Useful evidence from anyone: for dives that went missing vs dives that survived, the sync
+    date, the firmware each was recorded with (cloud `Header.Device.Info.SW`), and what else the
+    watch recorded in between (other sports, maps).
 - libdivecomputer#73, the upstream branch, does not yet carry any of the 1.16.1 / 1.17.1 fixes
   (still at `7288977`, last updated 2026-09-26). Answered by latishab on #29 (2026-10-04): the
   transport fixes (complete downloads, paging, size check, foreach gap, per-dive handles,
