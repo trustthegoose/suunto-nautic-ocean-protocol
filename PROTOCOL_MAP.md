@@ -496,7 +496,8 @@ descent time/distance, vertical speed, header duration, pause duration, average 
 | Water type | /Summary byte 0x3E (from the SBEM signature) | 0 fresh, 1 EN13319, 2 salt. Consistent on all 33 of my dives against the density fitted from `12`/`16`, and confirmed against the cloud `DiveHeader.WaterType` (Fresh/EN13319/Salt dives, 2026-10-04). Prior art: latishab already decodes it as DC_FIELD_SALINITY in libdivecomputer#73 (commit `cd3dbc890`, 2026-09-08), but the deepsealabs fork that libdc-swift ships does not | [wire-derived] [cloud] |
 | More /Summary fields (avg depth, tank start/end pressures per transmitter, temperatures, desat/no-fly, tissue) | /Summary | see 6.6 | [cloud-matched] |
 | Gas mixes | /Summary from 0xC7 | 45-byte record per gas: O2% +1, He% +2, PO2 max float32 +5, cylinder volume float32 m^3 +9; record index = GasNumber = cylinder slot | [driver] |
-| Serial, firmware, MACs | `/Info` | NUL-separated strings | [wire] [driver] |
+| Serial, firmware, MACs | `/Info` | NUL-separated strings: maker, model, codename (Vaasa = Nautic, Porvoo = Ocean), serial, firmware version (e.g. 2.55.46 / 2.51.28), hardware revision, build identifiers, BLE and Wi-Fi MAC. No build date | [wire] [driver] |
+| Firmware per dive | /Summary Header `Device.Info.SW` | enum index; its text (the version the dive was recorded with) is in that dive's Descriptors (`enum:0=2.51.28`). The cloud record carries the same `SW` | [schema] [cloud] |
 
 ### 7.2 In the Suunto cloud (`workouts/<key>/sml` JSON) [cloud]
 
