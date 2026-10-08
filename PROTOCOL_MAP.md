@@ -273,13 +273,22 @@ inside the HDLC `7E ... 7E`.
 ```
 01 24 | BE 25 70 73 | count:u32 | 0C 00 00 00 | 45 00 00 00 | records ...
 ```
-- `count`: 0x12 = 18 on Ocean page 1, 5 on page 2. [wire] The other header words are
-  [unknown]; one header value falls in the timestamp window and must not be read as a dive. [driver]
+- Header fields, compared over 16 captures (2026-10-03 to 10-07, both watches): `01 24` at +0
+  and a u16 at +2 (`FE 24` Nautic, `BE 25` Ocean page 1, `86 24` Ocean page 2) are constant;
+  **count** is a u16 at +6 (10, 18, 5); a u32 at +10 is always 12. The bytes at +4 (2), +8 (2)
+  and +14 (4) change on every capture and hold ASCII fragments ("tem_", "es.s", "ps") and
+  RAM-like addresses (`0x1002xxxx`): consistent with **struct alignment padding** copied out
+  uncleared, not fields. [wire] [inferred] One header value falls in the timestamp window and
+  must not be read as a dive. [driver]
 - **Record**, 24 bytes, all u32 LE: `[start][end][w1][w2][size][pad]` [driver] [wire]
   - `start` = the dive's **LogId** and UNIX start time (seconds). This is the id used in
     `/Logbook/byId/<id>/...`.
   - `end` = end time (within a day of start).
-  - `w1`, `w2`: [unknown] (`w1` is 1 in the records seen).
+  - `w1`, `w2`: only `w1`'s **low byte** is stable (always `01`, a u8 field). `w1`'s upper 3
+    bytes and `w2` change between captures without any watch activity, and sometimes hold the
+    watch's clock at capture time (Unix time with its low byte overwritten by the `01`; a packed
+    date in `w2`) or `0x1002xxxx` addresses: read as padding, not flags; not a sync signal.
+    [wire] [inferred]
   - `size` = compressed /Data + /Summary data bytes (the completeness check).
 - Example: `A1228E6A 10248E6A 01000000 00000000 70DB0000 00000000` = start 0x6A8E22A1,
   end 0x6A8E2410, size 56,176. [wire]
@@ -526,7 +535,8 @@ Top level `{"Summary": {"Samples": [...]}, "Data": {"Samples": [...]}}`; every s
 
 ## 9. Open questions
 
-- The Entries header words, and `w1`/`w2` in each record.
+- The constant Entries header fields (the u16 at +2, the u32 = 12 at +10) and `w1`'s low byte
+  (always 1); the varying bytes look like struct padding (6.1).
 - Whether `/Logbook/UnsynchronisedLogs` notifies over BLE when a new dive is logged.
 - What `/Logbook/byId/<id>/Flags` holds, and whether the app writes to it after a sync.
 - The meaning of the Hello reply, and whether the watch would accept a different identity.
