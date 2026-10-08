@@ -277,8 +277,10 @@ inside the HDLC `7E ... 7E`.
   and a u16 at +2 (`FE 24` Nautic, `BE 25` Ocean page 1, `86 24` Ocean page 2) are constant;
   **count** is a u16 at +6 (10, 18, 5); a u32 at +10 is always 12. The bytes at +4 (2), +8 (2)
   and +14 (4) change on every capture and hold ASCII fragments ("tem_", "es.s", "ps") and
-  RAM-like addresses (`0x1002xxxx`): consistent with **struct alignment padding** copied out
-  uncleared, not fields. [wire] [inferred] One header value falls in the timestamp window and
+  RAM-like addresses (`0x1002xxxx`): **struct alignment padding** copied out uncleared, not
+  fields. Tested 2026-10-07 (Ocean, five list reads in ~4 min, read-only, no other activity):
+  the gap bytes change between identical back-to-back reads and follow the preceding request
+  (`/Summary`, `/Info`), while the fields stay fixed. [wire] One header value falls in the timestamp window and
   must not be read as a dive. [driver]
 - **Record**, 24 bytes, all u32 LE: `[start][end][w1][w2][size][pad]` [driver] [wire]
   - `start` = the dive's **LogId** and UNIX start time (seconds). This is the id used in
@@ -287,8 +289,10 @@ inside the HDLC `7E ... 7E`.
   - `w1`, `w2`: only `w1`'s **low byte** is stable (always `01`, a u8 field). `w1`'s upper 3
     bytes and `w2` change between captures without any watch activity, and sometimes hold the
     watch's clock at capture time (Unix time with its low byte overwritten by the `01`; a packed
-    date in `w2`) or `0x1002xxxx` addresses: read as padding, not flags; not a sync signal.
-    [wire] [inferred]
+    date in `w2`) or `0x1002xxxx` addresses: padding, not flags; not a sync signal. Same test:
+    `w1`/`w2` changed on 15 of 23 dives between identical back-to-back reads and changed back
+    (e.g. `10024f01/00000002` -> `6ac6f301/24261008` -> `10024f01/00000002`); `w1`'s low byte
+    stayed `01` on every dive. [wire]
   - `size` = compressed /Data + /Summary data bytes (the completeness check).
 - Example: `A1228E6A 10248E6A 01000000 00000000 70DB0000 00000000` = start 0x6A8E22A1,
   end 0x6A8E2410, size 56,176. [wire]
