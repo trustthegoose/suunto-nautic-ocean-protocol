@@ -372,6 +372,10 @@ DiveFooter 507/658). Points it settles:
 - Nautic's extra 151 B per record = 3 more gas slots (8 vs 5) + a 16-B CCR Setpoint block
   (Low/High f32, SwitchDepthLow/High int8, IsAutomatic/IsCustom bool, Custom f32).
 - GPS: int32 degrees x 1e7 (schema: PI*x/(1e7*180) radians); GPSAltitude uint16, x/5 - 1000 m.
+- `local64` times (e.g. DiveFooter `DiveLocation.Start/Stop.DateTime`): **local wall-clock milliseconds**
+  in the low 7 bytes, flag byte `0xF0` on top. The GPS start/stop "DateTime" equals the dive's start
+  and end time, not the moment the fix was taken, so a stale (reused) fix can't be detected from it.
+  [wire] [cloud]
 
 **Record layout.** The /Summary is six SBEM records, in the same order as the six Summary
 samples of the cloud JSON (the cloud lists keys alphabetically inside each sample, so key
