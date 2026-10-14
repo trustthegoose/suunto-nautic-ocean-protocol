@@ -53,7 +53,9 @@ Bluetooth LE GATT  service 61353090-8231-49cc-b57a-886370740041
 | Item | Value | Source |
 |---|---|---|
 | Service UUID | `61353090-8231-49cc-b57a-886370740041` | [driver] libdc-swift `DeviceConfiguration.swift`, `BLEManager.swift` |
-| Characteristics | one write (without response) and one notify, picked by property, not by UUID | [driver] `BLEManager.swift` |
+| Characteristics | write without response `17816557-5652-417f-909f-3aee61e5fa85` (ATT handle 18) host -> watch; notify `34802252-7185-4d5d-b431-630e7050e8f0` (handle 21) watch -> host. The drivers pick them by property, not UUID | [wire] [app]: Nautic service discovery in two app captures; Ocean listed live from a Mac (2026-10-14). Max (libdivecomputer/libdivecomputer#70) gave the first UUID, though as the one to subscribe to; it's the write side |
+| Other services | Battery `180f` (`2a19` battery level, read + notify); generic `1800`/`1801` | [wire] [app] |
+| Advertising | the watch advertises the `61353090-...` service UUID, so a scan can filter on it | [wire] |
 | Advertised name | `Suunto Ocean <serial>` / `Suunto Nautic <serial>` (name contains the serial) | [wire] |
 | MTU | never extended; notifications arrive as 60-byte pieces of an HDLC frame; host writes are split with an 8 ms gap | [wire] [driver] |
 | Notify enable | the CCCD write can raise an iOS pairing dialog on first connect (allow 20 s) | [driver] |
@@ -370,6 +372,13 @@ offset  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 2
        A5 01 2D 01 00 00 F0 24 0E 01 80 00 02 24 22 25 00 00 00 00 16 01 00 10 0C 00 00 00 | payload
        ^ opcode 01, msgid 0000, handle F0 24 0E            payload size u16 = 0x0116 (278) ^
 ```
+- Header bytes 16-19 (u32 LE) are the chunk's **offset in the compressed stream**: each chunk's
+  offset = the previous offset + the previous payload size (verified on every chunk of a
+  Nautic and two Ocean downloads, 4,341 / 5,407 / 192 chunks). Described first by Max in
+  libdivecomputer/libdivecomputer#70. [wire]
+- **End of stream:** the last chunk has payload size **0**, at an offset equal to the total
+  compressed length (e.g. 1,502,475 on an Ocean dive, exactly what the driver captured). A
+  driver can stop on it instead of waiting for silence. [wire] (2026-10-14)
 - The 28-byte "MDS" header is counted from the frame's first byte (`A5`); the payload size
   is the u16 LE at frame offset 20, and the payload starts at offset 28. [driver] [wire]
 - Stream chunks carry msgid `0000` and the resource's static handle `F0 24 0E`, not the
