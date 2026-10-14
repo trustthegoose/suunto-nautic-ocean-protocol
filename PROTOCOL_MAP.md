@@ -199,7 +199,8 @@ inside the HDLC `7E ... 7E`.
    ```
    A5 12 20 00 00 00 09 09 20 16 45 56 41 10 04 41 10 0C 00 00 00 04 01 02 ...  ("EVA")
    ```
-   Reply: `A5 13 20 00 00 00 09 09 04 83 21 10 42 10 04 C2 40 0C ...`. The reply's content
+   Reply, shown here for a made-up serial `123456789012`:
+   `A5 13 20 00 00 00 09 09 04 C2 40 14 C6 81 24 4A 20 0C ...`. The reply's content
    is not understood; only the round trip is required.
 
 ### 5.2 Liveness and identity (optional)
