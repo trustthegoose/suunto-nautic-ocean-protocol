@@ -1,7 +1,7 @@
 # Suunto Nautic / Ocean: connection, download sequence and data map
 
 Written 2026-10-04. A reference for everything known about talking to a Suunto
-Nautic, Nautic S or Ocean ("Vaasa" / "Porvoo" generation) over Bluetooth LE,
+Nautic, Nautic S or Ocean ("Vaasa" / "Ylivieska" / "Porvoo" generation) over Bluetooth LE,
 downloading its dives, and where each piece of dive data lives.
 
 **Evidence tags** used throughout:
@@ -31,6 +31,20 @@ downloading its dives, and where each piece of dive data lives.
 - **[unknown]** not established; treat as open.
 
 Related: deepsealabs/libdc-swift#29 and #56-#61, libdivecomputer/libdivecomputer#73.
+
+
+**Models** (internal names; the watch never calls itself "Nautic S"):
+
+| Model | Codename (`Device.Name`) | Hardware (`Device.Info.HW`) | Evidence |
+|---|---|---|---|
+| Nautic | `Vaasa` | `GT_RevX` | [cloud] app/cloud exports, fw 2.55.46; [max] (libdivecomputer/libdivecomputer#70 gave Vaasa and GT_RevX first, but applied them to the Ocean too) |
+| Ocean | `Porvoo` | `Seal_RevA3` | [cloud] app/cloud exports, fw 2.51.28 and 2.40.56 |
+| Nautic S | `Ylivieska` | `Seal_Lite_RevA3` | reported by K4pisa from his app exports, deepsealabs/libdc-swift#29 (2026-09-01); not in our own data |
+
+The Nautic S shares the Ocean's "Seal" hardware family, not the Nautic's "GT": consistent
+with the Nautic S and some Ocean firmware both writing the 141-byte `16` record where the
+Nautic writes 195 bytes (section 7). Match a device on its advertised BLE name, or on
+these codenames; a match on the human-readable model name misses the Nautic S.
 
 ---
 
@@ -259,7 +273,7 @@ inside the HDLC `7E ... 7E`.
 3. `GET /System/Mode` -> on the Ocean answers handle `FF FF FF`, status **404**. libdivecomputer
    uses it only as a round-trip check. [wire]
 4. `GET /Info` -> ACK handle `F1 2F 00`, 200. `FETCH` (short) -> one DATA frame (~270 B)
-   holding NUL-separated strings: `Suunto`, `Ocean`/`Nautic`, codename (`Vaasa`/`Porvoo`),
+   holding NUL-separated strings: `Suunto`, `Ocean`/`Nautic`, codename (`Vaasa`/`Porvoo`; `Ylivieska` expected on a Nautic S, see Models),
    serial (12 hex chars), part numbers, firmware `N.N.N`, `BLE Mac Address`, `WiFi Mac Address`.
    Then `RELEASE F1 2F 00` -> `03`, 200. [wire] [driver]
 
