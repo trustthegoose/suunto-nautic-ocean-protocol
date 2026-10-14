@@ -19,6 +19,12 @@ downloading its dives, and where each piece of dive data lives.
   (2 Nautic, 4 Ocean), by a matching script. Offsets not yet checked on all dives.
 - **[schema]** stated by the watch's own per-dive `/Logbook/byId/<id>/Descriptors` schema
   (field names, types, enums, group ids), fetched 2026-10-07 from both watches.
+- **[headers]** confirmed by the public Movesense device-library headers
+  (https://bitbucket.org/movesense/movesense-device-lib): `whiteboard/metadata/MetadataStructures.h`
+  (value types), `whiteboard/WbVersion.h` (versions), `whiteboard/Identifiers.h` and
+  `WhiteboardConfig.h` (SuuntoSerial), `sbem/Sbem.hpp`. These give constants and
+  structures, not the wire format: Movesense doesn't publish that, so the byte layouts here
+  remain reverse-engineered.
 - **[unknown]** not established; treat as open.
 
 Related: deepsealabs/libdc-swift#29 and #56-#61, libdivecomputer/libdivecomputer#73.
@@ -32,7 +38,8 @@ Bluetooth LE GATT  service 61353090-8231-49cc-b57a-886370740041
   write-without-response characteristic (host -> watch)
   notify characteristic                (watch -> host)
     HDLC framing      7E ... 7E, escape 7D / XOR 20, no checksum at this layer
-      RPC frame       A5 opcode sublen:u16 msgid:u16 ... crc32r:u32 (Whiteboard protocol)
+      RPC frame       A5 opcode sublen:u16 msgid:u16 ... crc32r:u32 (Movesense Whiteboard
+                      comm protocol, version 9 [headers]; wire format not publicly documented)
         resource      path-addressed (e.g. /Logbook/byId/<id>/Data), bound to a 3-byte handle
           content     /Data:    MDS chunks -> Heatshrink -> SBEM0103 (samples)
                       /Summary: paged -> SBEM0103 (uncompressed; GF, gases)
@@ -117,8 +124,8 @@ A5 | opcode:1 | sublen:u16 LE | msgid:u16 LE | payload ... | crc32r:u32 LE
 
 | Op | Direction | Meaning | Source |
 |---|---|---|---|
-| `12` | host -> watch | Hello ("EVA" handshake) | [driver] [wire] |
-| `13` | watch -> host | Hello reply | [wire] |
+| `12` | host -> watch | Hello: comm-protocol versions + host identity (SuuntoSerial) + Whiteboard version; see 5.1 | [driver] [wire] [headers] |
+| `13` | watch -> host | Hello reply: the same fields for the watch, including its serial; see 5.1 | [wire] [headers] |
 | `0A` | host -> watch | GET a path (resolves it to a handle) | [driver] [wire] |
 | `02` | watch -> host | ACK of a GET: carries the handle + status | [wire] |
 | `03` | watch -> host | ACK (alternate), e.g. the answer to RELEASE | [wire] |
@@ -152,7 +159,10 @@ A5 0D 0D 00 msgid | handle:3 | 01 80 00 | count=01 | type:u16 | value:u32 LE | c
 type 06 = int32 (Summary offset, in data bytes)
 type 07 = uint32 (Entries StartAfterId)
 ```
-Parameter type ids follow Movesense Whiteboard: 1 bool, 3 u8, 5 u16, 6 i32, 7 u32. [driver]
+Parameter type ids are Whiteboard's `ValueType` enum: 0 none, 1 bool, 2 int8, 3 uint8,
+4 int16, 5 uint16, 6 int32, 7 uint32, 8 int64, 9 uint64, 10 float, 11 double, 12 string,
+13 byte stream, 14 hash string, 15 structure. [headers] (the header warns the values
+"match fixed data type IDs"). Seen on the wire: 1, 3, 5, 6, 7. [driver] [wire]
 Sending the ranged form to `/Logbook/Entries` page 1 gets **400 Bad Request**. [driver]
 
 **DATA** (`05`):
@@ -197,11 +207,47 @@ inside the HDLC `7E ... 7E`.
 2. **Hello** (42 bytes, sent verbatim from a captured template; the identity inside is
    not tied to a phone): [driver] [wire]
    ```
-   A5 12 20 00 00 00 09 09 20 16 45 56 41 10 04 41 10 0C 00 00 00 04 01 02 ...  ("EVA")
+   A5 12 20 00 00 00 09 09 20 16 45 56 41 10 04 41 10 0C 00 00 00 04 01 02 ...
    ```
-   Reply, shown here for a made-up serial `123456789012`:
-   `A5 13 20 00 00 00 09 09 04 C2 40 14 C6 81 24 4A 20 0C ...`. The reply's content
-   is not understood; only the round trip is required.
+   Reply, shown here for a made-up serial `123456789012` (a real reply carries the watch's
+   own serial, see below):
+   ```
+   A5 13 20 00 00 00 09 09 04 C2 40 14 C6 81 24 4A 20 0C 00 00 00 04 01 02
+   00 00 00 00 00 01 00 00 00 00 00 00 00 00 9C 81 E4 E4
+   ```
+   libdivecomputer only needs the round trip, but the content is mostly decoded. Both are
+   42-byte frames: header (4), msgid `00 00` (2), a 32-byte payload, CRC (4). The payload
+   layout is the same in both directions:
+
+   | Payload bytes | Host Hello | Watch reply | Meaning | Evidence |
+   |---|---|---|---|---|
+   | 0 | `09` | `09` | minimum comm-protocol version, 9 | [headers] `WB_COMM_PROTO_MIN_VERSION` |
+   | 1 | `09` | `09` | current comm-protocol version, 9 | [headers] `WB_COMM_PROTO_CURRENT_VERSION` |
+   | 2 | `20` | `04` | unknown; differs host vs watch, likely a role or device class | [unknown] |
+   | 3-14 | `16 45 56 41 10 04 41 10 0C 00 00 00` | the watch's packed serial | `SuuntoSerial`, 12 packed bytes | [headers] size; [wire] content |
+   | 15-17 | `04 01 02` | `04 01 02` | Whiteboard library version 4.1.2 | [headers] `WbVersion.h` |
+   | 18-22 | `00` x5 | `00` x5 | unknown (zero in every capture) | [unknown] |
+   | 23 | `03` | `01` | unknown; likely capability flags | [unknown] |
+   | 24-31 | `00` x8 | `00` x8 | unknown (zero in every capture) | [unknown] |
+
+   **SuuntoSerial packing** [wire]: 16 six-bit characters filling the 12 bytes exactly
+   (16 x 6 = 96 bits), least-significant bit first from the field's first bit. Each
+   character is stored as **its ASCII code minus 0x2F** ('0' = 1, '9' = 10, 'C' = 20, range
+   ASCII 0x30-0x6E); 0 = unused slot. Checked against four watches whose serials are known,
+   one of them containing a letter, which fixes the letter mapping. The headers define the
+   type (up to 16 characters in 12 bytes) but `pack()`'s code isn't public.
+
+   The host identity decodes to **`ECSD00000002`**. The official Suunto app sends this exact
+   Hello, byte for byte, from different phones [app], and the driver's template is a copy
+   of it: a fixed app identity, not a per-phone one. The "EVA" in its bytes is an artefact
+   of the packing, not ASCII.
+
+   Across the app/driver Hello and four watch replies, payload bytes 0-1, 15-17 and the
+   zero runs are identical; byte 2 is `20` for the host and `04` for every watch; byte 23 is
+   `03` for the host and `01` for every watch.
+
+   So the reply tells the host which watch it is talking to (its serial) before any `/Info`
+   request.
 
 ### 5.2 Liveness and identity (optional)
 
@@ -561,7 +607,8 @@ Top level `{"Summary": {"Samples": [...]}, "Data": {"Samples": [...]}}`; every s
   (always 1); the varying bytes look like struct padding (6.1).
 - Whether `/Logbook/UnsynchronisedLogs` notifies over BLE when a new dive is logged.
 - What `/Logbook/byId/<id>/Flags` holds, and whether the app writes to it after a sync.
-- The meaning of the Hello reply, and whether the watch would accept a different identity.
+- Hello payload bytes 2 and 23 (host vs watch values differ), and whether the watch would
+  accept a different host identity. The rest of the Hello is decoded in 5.1.
 - Dive retention on the watch. As of 2026-10-07:
   - **Working rule: if `/Logbook/Entries` lists a dive, its raw data is there.** Every listed dive
     on two watches downloads complete (33/33, exact size check, repeated daily on the oldest
