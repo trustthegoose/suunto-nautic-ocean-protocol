@@ -6,7 +6,7 @@ It grew out of testing the [libdc-swift](https://github.com/deepsealabs/libdc-sw
 
 ## Contents
 
-- [`PROTOCOL_MAP.md`](PROTOCOL_MAP.md): the map. Every statement carries an evidence tag ([wire], [driver], [app], [cloud], [cloud-matched], [headers], [unknown]) saying how it is known.
+- [`PROTOCOL_MAP.md`](PROTOCOL_MAP.md): the map. Every statement carries an evidence tag ([wire], [driver], [app], [cloud], [cloud-matched], [headers], [max], [unknown]) saying how it is known.
 - [`schema/`](schema/): every `/Summary` field with its byte offset, type, scaling and enum values, decoded from the watch's own per-dive `/Logbook/byId/<id>/Descriptors` schema (one Nautic and one Ocean, firmware as of 2026-10).
 - [`tools/descriptors_decode.py`](tools/descriptors_decode.py): decoder for a `Descriptors` file (`python3 tools/descriptors_decode.py FILE [GROUP_ID ...]`).
 

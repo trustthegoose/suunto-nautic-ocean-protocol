@@ -25,6 +25,9 @@ downloading its dives, and where each piece of dive data lives.
   `WhiteboardConfig.h` (SuuntoSerial), `sbem/Sbem.hpp`. These give constants and
   structures, not the wire format: Movesense doesn't publish that, so the byte layouts here
   remain reverse-engineered.
+- **[max]** first described by Max (GitHub `urbamax`) in his reverse-engineering report,
+  libdivecomputer/libdivecomputer#70 (2026-08-28), from a capture of the official app's sync.
+  The other tags on the same line say how it was later confirmed.
 - **[unknown]** not established; treat as open.
 
 Related: deepsealabs/libdc-swift#29 and #56-#61, libdivecomputer/libdivecomputer#73.
@@ -102,7 +105,7 @@ Bluetooth LE GATT  service 61353090-8231-49cc-b57a-886370740041
 ## 3. HDLC framing
 
 - Every frame on the link is `7E <body> 7E`; inside the body `7E`/`7D` are escaped as
-  `7D` followed by the byte XOR `20`. No checksum at this layer (the RPC frame has a CRC).
+  `7D` followed by the byte XOR `20`. No checksum at this layer (the RPC frame has a CRC). [max]
 - libdivecomputer opens the HDLC layer with 244-byte buffers. [driver]
 - One RPC frame per HDLC frame. A long frame spans several 60-byte BLE notifications. [wire]
 
@@ -116,7 +119,7 @@ Bluetooth LE GATT  service 61353090-8231-49cc-b57a-886370740041
 A5 | opcode:1 | sublen:u16 LE | msgid:u16 LE | payload ... | crc32r:u32 LE
 ```
 
-- `crc32r` = reflected CRC-32 over every preceding byte of the frame (from `A5`). [driver]
+- `crc32r` = reflected CRC-32 over every preceding byte of the frame (from `A5`). [driver] [max]
 - `msgid` is a per-connection counter the host increments on every request. A reply
   echoes its request's msgid; matching on it is how replies are told apart from other
   traffic on the link. [driver] [wire]
@@ -279,7 +282,7 @@ inside the HDLC `7E ... 7E`.
     (a non-200 here, notably **423 Locked**, means retry after a pause).
 11. The watch pushes `A5 01` chunks continuously, **unacknowledged**, ~278 B of payload
     each. The host reads until **2 s of silence** (or a `09`). A 1.3-1.7 MB dive takes
-    ~4 minutes. [wire] [driver]
+    ~4 minutes. [wire] [driver] [max]
 12. `UNSUBSCRIBE 00 24 0E` (`A5 11`) -> `A5 09`, 200. A chunk or two may still arrive before
     the `09`; they belong to this dive. Without this stop the watch keeps streaming, and the
     next GET can be answered by a leftover chunk or refused with 423. [driver] [wire]
@@ -380,10 +383,10 @@ offset  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 2
   compressed length (e.g. 1,502,475 on an Ocean dive, exactly what the driver captured). A
   driver can stop on it instead of waiting for silence. [wire] (2026-10-14)
 - The 28-byte "MDS" header is counted from the frame's first byte (`A5`); the payload size
-  is the u16 LE at frame offset 20, and the payload starts at offset 28. [driver] [wire]
+  is the u16 LE at frame offset 20, and the payload starts at offset 28. [driver] [wire] [max]
 - Stream chunks carry msgid `0000` and the resource's static handle `F0 24 0E`, not the
   `00 24 0E` slot the GET returned. [wire]
-- Concatenated payloads = one **Heatshrink** (LZSS) stream, window_sz2 7, lookahead_sz2 5. [driver]
+- Concatenated payloads = one **Heatshrink** (LZSS) stream, window_sz2 7, lookahead_sz2 5. [driver] [max]
 - Decompressed = an **SBEM0103** sample stream. Example: 91,988 compressed -> 101,550 B. [wire]
 - Note: the "always-on telemetry" frames noted on 2026-09-14 (`7EA5 012D 0100 00F0 240E ...`)
   match this chunk shape. Most likely a /Data stream left running by DC Tester's then-missing
@@ -396,9 +399,9 @@ means anything. [driver]
 
 ### 6.5 SBEM0103 container (both /Data and /Summary)
 
-- Starts with the ASCII signature `SBEM0103`.
+- Starts with the ASCII signature `SBEM0103`. [max]
 - Then TLV records: `[id:1][length:1][value]`; length `FF` = a 4-byte LE length follows.
-  Unknown ids are skipped. [driver]
+  Unknown ids are skipped. [driver] [max] (TLV layout and the `FF` extended length)
 - In a sample stream every record except the timeline base (`01`) starts with a signed
   **int16 LE millisecond delta** from the previous record. [driver]
 - Heatshrink artifacts can fake a header; fixed-length ids are validated
@@ -526,14 +529,14 @@ descent time/distance, vertical speed, header duration, pause duration, average 
 
 | Data | Where | Format / offset | Source |
 |---|---|---|---|
-| Dive id / start time | Entries record `start` | u32 UNIX seconds | [wire] [driver] |
+| Dive id / start time | Entries record `start` | u32 UNIX seconds | [wire] [driver] [max] (ids are UNIX timestamps) |
 | Dive end time | Entries record `end` | u32 UNIX seconds | [driver] |
 | Expected download size | Entries record `size` | u32 = /Data compressed + /Summary bytes | [driver] [wire] |
 | Absolute dive start (clock) | /Data GPS record `0B` | UTC ms; start = gps_utc - gps_rel_time | [driver] |
 | No-GPS dive start | only the LogId (dive id) | fallback | [driver] |
 | Depth | /Data `16` (extended status), every ~10 s | float32 at +2 (m) | [driver] |
-| Water temperature | /Data `12` (1 Hz profile) | u16 at +16, centi-kelvin (value/100 - 273.15) | [driver] |
-| **Absolute pressure, ~1 Hz** | /Data `12` | u32 at +6, Pa (`FFFFFFFF` = none). depth = (P - surface pressure from `17`) / (rho x 9.81), rho from the water type (1000 fresh / 1020 EN13319 / 1030 salt), matching the `16` depths to ~1 cm. **Not decoded by the parser.** The Suunto app's max depth is the peak of these (25.00/16.21/25.13/16.32 m vs the 10 s samples' 24.72/16.00/24.92/16.07 m on four Sep 14 dives) | [wire-derived 2026-10-04] |
+| Water temperature | /Data `12` (1 Hz profile) | u16 at +16, centi-kelvin (value/100 - 273.15) | [driver] [max] |
+| **Absolute pressure, ~1 Hz** | /Data `12` | u32 at +6, Pa (`FFFFFFFF` = none). depth = (P - surface pressure from `17`) / (rho x 9.81), rho from the water type (1000 fresh / 1020 EN13319 / 1030 salt), matching the `16` depths to ~1 cm. **Not decoded by the parser.** The Suunto app's max depth is the peak of these (25.00/16.21/25.13/16.32 m vs the 10 s samples' 24.72/16.00/24.92/16.07 m on four Sep 14 dives) | [wire-derived 2026-10-04] [max] |
 | Cylinder pressures | /Data `16` (extended status) | 18-byte slots from +42: `[idx][?][Pressure u32 Pa][Pressure2 u32 Pa][GasTime u32 s]...`; tank 0 Pressure at +44 | [driver] |
 | Second transmitter (sidemount) | /Data `16` slot `Pressure2` (+6 in the slot) | Pa; real only if non-zero twice | [driver] |
 | Gas time remaining | /Data `16` slot +10 | u32 s; `FFFFFFFF` = not computed | [driver] |
