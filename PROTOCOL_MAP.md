@@ -451,6 +451,21 @@ DiveFooter 507/658). Points it settles:
   LastDecoStopDepth enum (3 = 3 m, 6 = 6 m); +46 AscentModeStepped, +47 OOAM (bool).
 - Nautic's extra 151 B per record = 3 more gas slots (8 vs 5) + a 16-B CCR Setpoint block
   (Low/High f32, SwitchDepthLow/High int8, IsAutomatic/IsCustom bool, Custom f32).
+- **CCR (Nautic only): every field is schema-only, none verified on a CCR dive.** On all of
+  our dives (open circuit) these bytes are zero. [schema] [unknown]
+  - Setpoint block, DiveHeader +545 and DiveFooter +642: Low and High (f32 bar),
+    SwitchDepthLow/High (int8), SetpointIsAutomatic/IsCustom (bool), Custom (f32).
+  - Gas record State 1 = CCR diluent, 2 = CCR oxygen: only 0 (OC) seen so far; the meaning of
+    the gas PO2 field (+5) for a diluent is unknown.
+  - How a dive is flagged as CCR: there is no dive-mode field in `/Summary`. Possibly the
+    `/Data` activity chunk `08` (sport id plus a `customModeId` text field), or the gas states.
+  - Setpoint switches: CCR dives log them as events (`SetpointSwitch {Mode: Automatic, PO2: 0.7 /
+    1.3}` in Suunto app exports of two Nautic CCR dives, reported on deepsealabs/libdc-swift#29,
+    2026-09-24); their `/Data` encoding is unknown.
+  - The Ocean's schema has no setpoint block (5 gas slots, records end at the gas array).
+  - The libdivecomputer parser currently treats the Nautic and Ocean as open-circuit only:
+    every dive is reported as OC, gases get no diluent/oxygen role, and no setpoints are emitted.
+    [driver]
 - GPS: int32 degrees x 1e7 (schema: PI*x/(1e7*180) radians); GPSAltitude uint16, x/5 - 1000 m.
 - `local64` times (e.g. DiveFooter `DiveLocation.Start/Stop.DateTime`): **local wall-clock milliseconds**
   in the low 7 bytes, flag byte `0xF0` on top. The GPS start/stop "DateTime" equals the dive's start
