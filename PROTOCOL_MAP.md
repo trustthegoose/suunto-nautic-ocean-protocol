@@ -156,7 +156,8 @@ A5 | opcode:1 | sublen:u16 LE | msgid:u16 LE | payload ... | crc32r:u32 LE
 | `11` | host -> watch | UNSUBSCRIBE / stream stop | [driver] [wire] |
 | `09` | watch -> host | stream end (answers `11`) | [wire] |
 | `0B` | host -> watch | RELEASE a handle a GET bound | [driver] [wire] |
-| `07` | watch -> host | subscribe-result traffic of another client (e.g. the app's logbook subscription); skip it | [driver] |
+| `0E` | host -> watch | PUT: write a value or upload data to a handle a GET bound, e.g. the app marking a dive synced (`/Flags`, value `01 05 00 03 00` = one uint16, 3) or pushing watch-face/app files in parts. Identified as PUT: the app uses it to write `/Flags`, which the app does with a PUT (Max's disassembly, deepsealabs/libdc-swift#29), and PUT follows GET in Whiteboard's request types (`GET, PUT, ...`, [headers]) as `0E` follows the read opcode `0D` | [app] [wire] |
+| `07` | watch -> host | PUT reply, echoing the `0E`'s msgid and handle, with a status: 200, 100 (continue, multi-part upload), 202, 400, 500 seen. All 559 `07` frames in the app captures pair with a `0E`. When another client (the Suunto app) shares the link, its PUT replies show up here: skip `07` frames that answer nobody's request on this connection. Earlier described as subscribe-result traffic [driver]; they are PUT replies. **Confirmed 2026-10-15 by an active test**: a `0E` (value 0) sent to the read-only `/Info` handle `F1 2F 00` was answered by a `07` with the same msgid and handle and status **400**, nothing changed, and the handle released normally (`0B` -> `03`, 200) | [app] [wire] |
 
 ### 4.3 Frame formats used in a download
 
