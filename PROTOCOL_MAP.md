@@ -394,8 +394,14 @@ offset  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 2
   Nautic and two Ocean downloads, 4,341 / 5,407 / 192 chunks). Described first by Max in
   libdivecomputer/libdivecomputer#70. [wire]
 - **End of stream:** the last chunk has payload size **0**, at an offset equal to the total
-  compressed length (e.g. 1,502,475 on an Ocean dive, exactly what the driver captured). A
-  driver can stop on it instead of waiting for silence. [wire] (2026-10-14)
+  compressed length (e.g. 1,502,475 on an Ocean dive, exactly what the driver captured), and
+  the watch sends it **twice** (byte-identical; it repeats its last chunk until told to stop).
+  Checked 2026-10-14 on every captured stream of all 33 dives on two watches (50 streams,
+  Nautic fw 2.55.46 and Ocean fw 2.51.28): present at the end of every stream, never earlier,
+  offset chain unbroken. [wire] A driver could stop on it instead of waiting for silence, but
+  should keep the silence / `STREAM_END` fallback: other models (Nautic S) and firmware are
+  unchecked, and no capture yet shows an interrupted transfer, to confirm the marker is absent
+  there.
 - The 28-byte "MDS" header is counted from the frame's first byte (`A5`); the payload size
   is the u16 LE at frame offset 20, and the payload starts at offset 28. [driver] [wire] [max]
 - Stream chunks carry msgid `0000` and the resource's static handle `F0 24 0E`, not the
