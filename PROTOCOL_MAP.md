@@ -58,6 +58,7 @@ Bluetooth LE GATT  service 61353090-8231-49cc-b57a-886370740041
       RPC frame       A5 opcode sublen:u16 msgid:u16 ... crc32r:u32 (Movesense Whiteboard
                       comm protocol, version 9 [headers]; wire format not publicly documented)
         resource      path-addressed (e.g. /Logbook/byId/<id>/Data), bound to a 3-byte handle
+                      (likely the first 3 bytes of a 4-byte Whiteboard ResourceId; see 4.3)
           content     /Data:    MDS chunks -> Heatshrink -> SBEM0103 (samples)
                       /Summary: paged -> SBEM0103 (uncompressed; GF, gases)
                       /Logbook/Entries: list records (id, end, size)
@@ -120,7 +121,12 @@ Bluetooth LE GATT  service 61353090-8231-49cc-b57a-886370740041
 
 - Every frame on the link is `7E <body> 7E`; inside the body `7E`/`7D` are escaped as
   `7D` followed by the byte XOR `20`. No checksum at this layer (the RPC frame has a CRC). [max]
-- libdivecomputer opens the HDLC layer with 244-byte buffers. [driver]
+- libdivecomputer opens the HDLC layer with 244-byte buffers. These are the read cache for
+  incoming BLE notifications (each ~60 bytes), not a frame-size limit: frames are reassembled
+  into the caller's buffer (`MAX_PACKET`, 512 bytes), and a larger frame fails with "HDLC frame
+  is too large" rather than being cut silently. [driver] The largest real frame is **481 bytes**
+  (a /Summary page), 31 bytes under that limit; stream chunks are 311 bytes. [wire] (2026-10-15,
+  385,565 frames)
 - One RPC frame per HDLC frame. A long frame spans several 60-byte BLE notifications. [wire]
 
 ---
@@ -191,6 +197,17 @@ A5 05 sublen msgid | handle:3 | flags:3 | status:u16 | content ... | crc
 ```
 **SUBSCRIBE / UNSUBSCRIBE / RELEASE**: same shape as the short fetch, with opcode `10` / `11`,
 and for RELEASE (`0B`) the tail is `01 80 00` (6-byte payload). [driver] [wire]
+
+**The `01 80 00` after the handle is not a constant.** The GET's ACK hands it out with the
+handle, and every later request and reply on that handle echoes it. Logbook resources and
+`/Info` get `01 80 00`; the file-system resources (`/Dev/FileSystem/Stream`, `/FileDelete`,
+`/DirectoryCreate`) and `/Meta/Hash` get `03 80 01` (seen in the app's traffic). [app] [wire] Copy
+the bytes from the ACK rather than hardcoding them. A likely reading [headers] [inferred]: the
+3-byte handle plus the next byte is Whiteboard's 4-byte `ResourceId` (one byte with two 4-bit
+fields, instance and execution context; a one-byte whiteboard id; a 16-bit local resource id),
+which makes that fourth byte the local resource id's high byte: `0x01..` for the logbook and
+`/Info` resources, `0x03..` for the file system and `/Meta/Hash`. The remaining two bytes
+(`80 00` / `80 01`) are unexplained.
 
 ### 4.4 Status codes (HTTP-like, u16 LE)
 
