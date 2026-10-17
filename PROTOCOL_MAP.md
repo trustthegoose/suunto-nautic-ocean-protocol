@@ -475,8 +475,10 @@ DiveFooter 507/658). Points it settles:
 - Gas record (45 B): State enum +0 (0 OC, 1 CCR diluent, 2 CCR oxygen, 3 Suit), **Oxygen
   int16 +1, Helium int16 +3**, PO2 f32 +5, TankSize f32 +9, TransmitterID/2 int32 +13/+17,
   TankFillPressure int32 +21, Start/End pressure +25/+29, Start2/End2 +33/+37 (int32 Pa),
-  AvgVentilation f32 +41. **The driver reads He as a u8 at +2 (the high byte of O2): helium
-  always reads 0** (trimix untested anywhere).
+  AvgVentilation f32 +41. **Verified on a watch** (2026-10-16): a Nautic tub dive set to 18/40
+  reads O2 18 at +1 and He 40 at +3 in both gas arrays (no match in the swapped order), and an
+  Ocean dive on 27% nitrox reads 27 / 0. [wire] Older drivers read He as a u8 at +2 (the high
+  byte of O2), so helium came out 0; the deepsealabs driver reads both int16 since build 22.
 - DiveHeader: +24 DeactivationTimeout, +41 SafetyStopTime (both int32); +32 Algorithm enum
   (0 Off, 1 Suunto RGBM, 2 Buhlmann); +33 Altitude, +35 Conservatism (int16); +45
   LastDecoStopDepth enum (3 = 3 m, 6 = 6 m); +46 AscentModeStepped, +47 OOAM (bool).
@@ -539,7 +541,7 @@ where known (e.g. DiveFooter +8). Multi-byte values are little-endian. [cloud-ma
 | Water type | 0x3E (62) | same | u8: 0 fresh, 1 EN13319, 2 salt | no (reported on #29) | [wire-derived] [cloud] |
 | Start tissue: CNS / OTU | 63 / 67 | same | u16 | no | [cloud-matched] |
 | Start tissue: N2, 16 compartments | 71-131 | same | 16 x f32 | no | [cloud-matched] |
-| Gas records | from 0xC7 (199), 45 B each | same | O2 % +1, He % +2, PO2 max f32 +5, tank size f32 m^3 +9 | **yes** | [driver] [cloud-matched] |
+| Gas records | from 0xC7 (199), 45 B each | same | O2 % int16 +1, He % int16 +3, PO2 max f32 +5, tank size f32 m^3 +9 | **yes** | [driver] [cloud-matched] [wire] |
 | Transmitter IDs, gas 0 (tank 1 / tank 2) | 212 / 216 | same | u32 (inside gas record 0) | no | [cloud-matched] |
 | Desaturation time / no-fly time | 589 / 593 | 438 / 442 | u32, s, DiveFooter +8 / +12 | no | [cloud-matched] |
 | Footer gas 0: PO2, tank size, transmitter IDs | 868, 872, 876 / 880 | 717, 721, 725 / 729 | as above | no | [cloud-matched] |
