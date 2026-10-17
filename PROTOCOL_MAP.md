@@ -89,22 +89,19 @@ Bluetooth LE GATT  service 61353090-8231-49cc-b57a-886370740041
 - A foregrounded (even idle) Suunto app on the same phone blocks other clients: requests
   fail with -9 / timeouts. [app] (@urbamax's A/B, 2026-09-06)
 - A stale iOS pairing gives "failed to handshake"; forget the watch in iOS settings.
-- The Nautic stops advertising after a period without use: not found ~13 h after its last
-  connection (2026-10-04), well short of the 48 h deep sleep. Press the top button before
-  connecting. Whether the timer counts from the last connection or the last button use is [unknown].
-- A Nautic showing its **standby screen** is not reachable either: on 2026-10-04 the iPad's
-  idle auto-download link dropped while the iPad slept, the watch sat on its standby screen,
-  and DC Tester scanned without finding it (iPad Bluetooth: Not Connected) until one button
-  press made it connect at once. Whether standby and the ~13 h timeout are the same
-  mechanism is [unknown]. Later the same day (DC Tester 1.0 (16) on the iPad): scanning found
-  nothing until the Nautic was simply **moved**, then it connected at once, and stayed connected
-  with its screen still dark. So the display state is not the indicator: the watch stops
-  advertising after a period without motion, and movement restarts advertising without waking
-  the screen. How long that period is, and whether it is the ~13 h case, is [unknown].
-  Owner's observation (2026-10-07): away from any diving, the Nautic stops advertising much
-  sooner, roughly an hour or less after its last activity; the daily Mac capture regularly needs
-  a button press plus movement first. Whether the timeout depends on recent dive activity or
-  dive mode is [unknown].
+- **Both watches stop advertising when idle, and BLE traffic doesn't count as use** (measured
+  2026-10-15/16 with a passive scan every 10-60 s from a Mac, nothing connecting):
+  - **Nautic:** stops when it enters Sleep, about **1 hour** after its last use (silent 59 min
+    after a tub dive closed, though our connections and a sync came in between). Its user guide:
+    always-on display after 5 min, Sleep after 1 h, Deep Sleep (power-off) after 48 h; a button
+    press or water contact wakes it from Sleep, raising the wrist only from the always-on display.
+    That fits the earlier observation (2026-10-04) that simply moving a dark Nautic made it
+    connect: it was presumably still within its first hour.
+  - **Ocean:** stops about **33-36 minutes after it last moved** (timed twice, lying still on a
+    desk at 42% battery), long after its screen has gone blank, and nothing in its user guide
+    describes it. Picking it up, with no button press, had it advertising again within 20 s.
+  - For auto download: a worn watch stays reachable; one left on a desk goes quiet after about
+    30 min (Ocean) or 1 h (Nautic), and the Nautic then needs a button press.
 - Connections from iPad, iPhone and the Mac all work, one at a time.
 - **A watch can be paired with several hosts at once.** Both watches stay paired with the Mac
   and with the iPhone and/or iPad together. Any paired host whose Bluetooth is on may
