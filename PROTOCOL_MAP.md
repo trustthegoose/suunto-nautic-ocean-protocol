@@ -341,12 +341,16 @@ inside the HDLC `7E ... 7E`.
 - Also calls `/Logbook/byId/<id>/Flags` and `/Logbook/UnsynchronisedLogs`, which the
   driver never does. Both read with a plain GET + short FETCH (reply type `05`, u16):
   `UnsynchronisedLogs` = 0 and `Flags` = **3** on every dive of both watches with all dives
-  synced through the Suunto app (2026-10-07, 33 dives) [wire]; which bit means "synced"
-  needs an unsynced dive. The app marks a dive synced by writing `Flags` (reported on #29);
-  never write it. Note: the GET binds a handle; ~30 unreleased handles make the watch
-  answer 400 until reconnect [wire]. `/Logbook/UnsynchronisedLogs` is a subscribable value (a counter);
-  whether the watch updates it over BLE after a new dive is **[unknown]** (DC Tester's
-  auto-download step 7 is testing it).
+  synced through the Suunto app (2026-10-07, 33 dives) [wire]. A new entry reads `Flags` = **0**
+  and raises `UnsynchronisedLogs` by one; after the app syncs it, `Flags` = 3 and the count is
+  back down (seen on both watches, 2026-10-15) [wire]. The app sets it with a PUT (`0E`) on the
+  entry's `/Flags` handle, answered by a standard `07` (same handle the watch gave our GET of
+  that `/Flags`) [wire]; never write it. Note: the GET binds a handle; ~30 unreleased handles
+  make the watch answer 400 until reconnect [wire]. `/Logbook/UnsynchronisedLogs` and
+  `/Sync/BusyState` are subscribable values. **BusyState changes are pushed** to a subscriber:
+  DC Tester's Auto download got "busy" while connected, about 2 minutes before a tub dive began
+  (2026-10-16) [wire]. Whether `UnsynchronisedLogs` changes are pushed too is [unknown] (seen
+  only as a value read on reconnect, 2 -> 3 after a new dive).
 - Re-lists /Logbook/Entries twice per sync and fetches /Summary several times per dive.
 - Reads the per-dive schema **`/Logbook/byId/<id>/Descriptors`** before /Summary and /Data
   when a dive is opened (path seen in a PacketLogger capture of the Suunto app; latishab decoded it on
@@ -695,8 +699,7 @@ Top level `{"Summary": {"Samples": [...]}, "Data": {"Samples": [...]}}`; every s
 
 - The constant Entries header fields (the u16 at +2, the u32 = 12 at +10) and `w1`'s low byte
   (always 1); the varying bytes look like struct padding (6.1).
-- Whether `/Logbook/UnsynchronisedLogs` notifies over BLE when a new dive is logged.
-- What `/Logbook/byId/<id>/Flags` holds, and whether the app writes to it after a sync.
+- Whether `/Logbook/UnsynchronisedLogs` changes are pushed to a subscriber (BusyState's are; 5.7).
 - Hello payload bytes 2 and 23 (host vs watch values differ), and whether the watch would
   accept a different host identity. The rest of the Hello is decoded in 5.1.
 - Dive retention: answered in 7.3. Still open: whether the Ocean's 31-day cleanup also removes an
