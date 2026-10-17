@@ -650,6 +650,31 @@ Top level `{"Summary": {"Samples": [...]}, "Data": {"Samples": [...]}}`; every s
 
 ---
 
+### 7.3 How long dives stay on the watch
+
+- **If `/Logbook/Entries` lists an entry, its raw data is there.** Every listed dive on two
+  watches has downloaded complete (exact size check, repeated daily on the oldest dive, byte
+  comparisons against archived copies). Entries are removed whole: they leave the list and then
+  answer **404** by id, with no partial or degraded state before that. [wire]
+- **Ocean: saving any new entry deletes every entry that started more than 31 days earlier.**
+  The age runs from the old entry's **start** (its id) to the moment the new entry is **saved**,
+  and the cutoff is 31 days to within about 2 minutes. Any new entry triggers it, a dive or any
+  other activity; age alone does not (dives sat untouched for 51 days while nothing new was
+  recorded). Synced entries only so far: an unsynced entry older than 31 days is untested. Not
+  in the user guide, which only mentions deleting the oldest dives when the logbook memory is
+  full. [wire] (2026-10-15/16)
+- **Nautic: no such cleanup.** Dives 34-35 days older than new tub dives were all kept; its user
+  guide's rule is the memory-full one. [wire]
+- For a host app: on an Ocean, download promptly, and before the watch records anything new if
+  the last download is more than a month old. Comparing every listed id and size against the
+  host's database catches entries missed by an interrupted run.
+- Evidence: four controlled tests (a full read and complete downloads before, one new entry with
+  nothing else connected, a full read and 404 checks after), with timelines and every entry's
+  age, are in the deepsealabs/libdc-swift#29 comment on Ocean retention. The deciding one: a dive
+  saved at ~19:59:48 deleted an entry that started at 19:58:13 thirty-one days earlier (31 d +
+  95 s) and kept one from 20:02:10 (31 d - 142 s); measured from the new dive's start, or from
+  the old entry's end, both would have been kept.
+
 ## 8. Failure modes and their causes
 
 | Symptom | Cause | Fixed in |
@@ -674,21 +699,8 @@ Top level `{"Summary": {"Samples": [...]}, "Data": {"Samples": [...]}}`; every s
 - What `/Logbook/byId/<id>/Flags` holds, and whether the app writes to it after a sync.
 - Hello payload bytes 2 and 23 (host vs watch values differ), and whether the watch would
   accept a different host identity. The rest of the Hello is decoded in 5.1.
-- Dive retention on the watch. As of 2026-10-07:
-  - **Working rule: if `/Logbook/Entries` lists a dive, its raw data is there.** Every listed dive
-    on two watches downloads complete (33/33, exact size check, repeated daily on the oldest
-    dive). Earlier "listed but unavailable" reports traced to tool defects (libdc-swift #56,
-    #59, #60). Disproved only by a listed dive that fails a complete download with a fixed driver.
-  - What removes dives from the list is not established. On one Ocean, all dives before a
-    ~3-month break are gone; cloud records show the last ones before the break were already on
-    the current firmware, so a firmware update doesn't explain that loss, but the watch may have
-    been reset during early connection troubleshooting, so that history can't be attributed.
-    A controlled record runs from 2026-10-03 (daily list captures, oldest-dive downloads,
-    firmware and sync-state checks, with resets and other events logged). A small fixed
-    dive-log area is unlikely (~1 MB per hour-long dive, hundreds fit in a sliver of storage).
-  - Useful evidence from anyone: for dives that went missing vs dives that survived, the sync
-    date, the firmware each was recorded with (cloud `Header.Device.Info.SW`), and what else the
-    watch recorded in between (other sports, maps).
+- Dive retention: answered in 7.3. Still open: whether the Ocean's 31-day cleanup also removes an
+  entry that hasn't been synced to the Suunto app yet.
 - libdivecomputer#73, the upstream branch, does not yet carry any of the 1.16.1 / 1.17.1 fixes
   (still at `7288977`, last updated 2026-09-26). Answered by latishab on #29 (2026-10-04): the
   transport fixes (complete downloads, paging, size check, foreach gap, per-dive handles,
