@@ -564,7 +564,7 @@ own record on all 6 dives at once) [cloud-matched]:
 | GF high / low | DiveHeader | +37 / +39 u16 |
 | Water type | DiveHeader | +48 u8 (0 fresh, 1 EN13319, 2 salt) |
 | Start tissue CNS / OTU; N2 x16 | DiveHeader | +49 / +53; +57.. f32 |
-| Gas records (45 B each) | DiveHeader | from +185: O2 +1, He +2, PO2 max f32 +5, tank m^3 f32 +9, transmitter IDs u32 +13/+17, fill pressure (bar) +21 |
+| Gas records (45 B each) | DiveHeader | from +185: O2 int16 +1, He int16 +3, PO2 max f32 +5, tank m^3 f32 +9, transmitter IDs u32 +13/+17, fill pressure (bar) +21 |
 | Desaturation / no-fly time (s) | DiveFooter | +8 u32 / +12 u32 |
 | Dive-route gyro bias X, Y, Z, figure of merit | DiveFooter | +17, +21, +25, +29 f32 |
 | End tissue CNS / OTU | DiveFooter | +34 / +38 u16 |
