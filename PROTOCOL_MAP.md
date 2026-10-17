@@ -355,7 +355,9 @@ inside the HDLC `7E ... 7E`.
   and raises `UnsynchronisedLogs` by one; after the app syncs it, `Flags` = 3 and the count is
   back down (seen on both watches, 2026-10-15) [wire]. The app sets it with a PUT (`0E`) on the
   entry's `/Flags` handle, answered by a standard `07` (same handle the watch gave our GET of
-  that `/Flags`) [wire]; never write it. Note: the GET binds a handle; ~30 unreleased handles
+  that `/Flags`) [wire]. A host can write it too: the watch accepts the same PUT from another
+  client (`07` status 200) and `UnsynchronisedLogs` follows (2026-10-16) [wire]. Don't write it in
+  normal use: it decides what the Ocean's cleanup may delete (7.3), and what the app re-syncs. Note: the GET binds a handle; ~30 unreleased handles
   make the watch answer 400 until reconnect [wire]. `/Logbook/UnsynchronisedLogs` and
   `/Sync/BusyState` are subscribable values. **BusyState changes are pushed** to a subscriber:
   DC Tester's Auto download got "busy" while connected, about 2 minutes before a tub dive began
@@ -674,11 +676,13 @@ Top level `{"Summary": {"Samples": [...]}, "Data": {"Samples": [...]}}`; every s
   watches has downloaded complete (exact size check, repeated daily on the oldest dive, byte
   comparisons against archived copies). Entries are removed whole: they leave the list and then
   answer **404** by id, with no partial or degraded state before that. [wire]
-- **Ocean: saving any new entry deletes every entry that started more than 31 days earlier.**
+- **Ocean: saving any new entry deletes every synced entry that started more than 31 days earlier.**
   The age runs from the old entry's **start** (its id) to the moment the new entry is **saved**,
   and the cutoff is 31 days to within about 2 minutes. Any new entry triggers it, a dive or any
   other activity; age alone does not (dives sat untouched for 51 days while nothing new was
-  recorded). Synced entries only so far: an unsynced entry older than 31 days is untested. Not
+  recorded). **Only synced entries (`Flags` = 3) are deleted:** with an entry's `Flags` written to 0
+  (unsynced) it survived a save 31 d + 2 h after its start, and with 3 written back the next save
+  deleted it (2026-10-16; the watch accepts a host's PUT to `/Flags`, see 5.7). Not
   in the user guide, which only mentions deleting the oldest dives when the logbook memory is
   full. [wire] (2026-10-15/16)
 - **Nautic: no such cleanup.** Dives 34-35 days older than new tub dives were all kept; its user
@@ -716,8 +720,7 @@ Top level `{"Summary": {"Samples": [...]}, "Data": {"Samples": [...]}}`; every s
 - Whether `/Logbook/UnsynchronisedLogs` changes are pushed to a subscriber (BusyState's are; 5.7).
 - Hello payload bytes 2 and 23 (host vs watch values differ), and whether the watch would
   accept a different host identity. The rest of the Hello is decoded in 5.1.
-- Dive retention: answered in 7.3. Still open: whether the Ocean's 31-day cleanup also removes an
-  entry that hasn't been synced to the Suunto app yet.
+- Dive retention: answered in 7.3.
 - libdivecomputer#73, the upstream branch, does not yet carry any of the 1.16.1 / 1.17.1 fixes
   (still at `7288977`, last updated 2026-09-26). Answered by latishab on #29 (2026-10-04): the
   transport fixes (complete downloads, paging, size check, foreach gap, per-dive handles,
