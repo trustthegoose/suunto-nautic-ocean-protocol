@@ -360,7 +360,11 @@ inside the HDLC `7E ... 7E`.
   normal use: it decides what the Ocean's cleanup may delete (7.3). The app doesn't re-download an
   entry it has already uploaded (it keeps its own list), so marking one unsynced creates no cloud
   duplicate; across two app syncs the entry simply stayed at 0, and `UnsynchronisedLogs` stayed
-  raised, until 3 was written back (2026-10-17) [wire]. Note: the GET binds a handle; ~30 unreleased handles
+  raised, until 3 was written back (2026-10-17) [wire]. Over 2 h with the app in the background and
+  the count stuck at 1, it made only its hourly sync, triggered by a watch push and writing weather
+  and settings, with no logbook access; logbook syncs came only from opening the app. So the raised
+  count is harmless, and marking entries unsynced is a workable way for a host to keep chosen dives
+  on an Ocean (2026-10-17) [wire]. Note: the GET binds a handle; ~30 unreleased handles
   make the watch answer 400 until reconnect [wire]. `/Logbook/UnsynchronisedLogs` and
   `/Sync/BusyState` are subscribable values. **BusyState changes are pushed** to a subscriber:
   DC Tester's Auto download got "busy" while connected, about 2 minutes before a tub dive began
