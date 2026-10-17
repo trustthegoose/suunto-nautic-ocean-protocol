@@ -550,6 +550,7 @@ where known (e.g. DiveFooter +8). Multi-byte values are little-endian. [cloud-ma
 | Per-window stats records (max depth, dive time, duration, distance, water temp min/max, vertical speed) | ~1250-1940, records 241 B apart | ~950-1640 | f32 | no | [cloud-matched]; which record is the whole dive is unresolved |
 | Dive time / max depth (dive record) | Header +321 / +330 | same | f32, s / m | **yes** | [driver] |
 | Average depth | 2306 (also 1938) | 2004 (also 1636) | f32, m, Header +338 (also Window 3 +215) | no (driver averages the samples) | [cloud-matched] |
+| Feeling (the post-dive "How was this dive?" answer) | 2239 | 1937 | int32, Header +271 (schema `Header.Feeling`): 1-5, 0 = not answered | no | [schema] [cloud-matched]: all 22 archived Ocean dives match the cloud `feeling` (5 <-> 5, 0 <-> null) |
 | Water temperature min / max | ~1342 / 1346 | ~1044 / 1040 | f32, K | no (driver uses samples) | [cloud-matched] |
 
 **Record-relative offsets** (second pass, 2026-10-06: each cloud field searched only inside its
@@ -580,6 +581,7 @@ own record on all 6 dives at once) [cloud-matched]:
 | Max depth / average depth incl. surface / dive time | each Windows | +190 / +194 / +198 f32 |
 | Average depth while diving | Windows 3 | +215 f32 |
 | Minimum altitude | Header | +64 f32 |
+| Feeling ("How was this dive?", 1-5, 0 = not answered) | Header | +271 int32 |
 | Water temp min / max (K) | Header | +313 / +317 f32 |
 | Dive time / max depth / **average depth** | Header | +321 / +330 / +338 f32 |
 
