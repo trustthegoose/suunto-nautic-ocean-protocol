@@ -86,8 +86,21 @@ Bluetooth LE GATT  service 61353090-8231-49cc-b57a-886370740041
   (shown as Connected in Settings > Bluetooth) whenever its Bluetooth is on, and the watch
   then stays invisible to other devices. Turn the bound phone's Bluetooth off. (Observed
   2026-10-04: the Nautic invisible to the iPad until the bound iPhone was ruled out.)
-- A foregrounded (even idle) Suunto app on the same phone blocks other clients: requests
-  fail with -9 / timeouts. [app] (@urbamax's A/B, 2026-09-06)
+- **Sharing a phone with the Suunto app.** On one phone, every app talks over the same BLE link,
+  and iOS (and macOS) hand every notification to every app subscribed on it: replies to the
+  Suunto app's requests, including its `07` PUT replies and its Hello replies, reach DC Tester
+  too (confirmed 2026-10-15 with a passive second client on a Mac and with DC Tester idle during
+  a real Suunto app sync) [wire]. The build 22 driver (deepsealabs) recognises frames for other
+  requests by sequence number and skips them, and while the app's session is already open, its traffic interleaves harmlessly with
+  a download. What breaks a download is the app **opening a new session**: the watch answers its
+  Hello on the shared link and about 2 s later ends our stream with `UNSUBSCRIBE_REPLY` status
+  **404** (our ordinary requests are still answered). A chunk cut short at that moment usually
+  swallows the Hello reply in `hdlc.c`. With the app retrying its Hello every ~10.6 s, every
+  stream stall coincided with one of those replies, and dives came out truncated (2026-10-15)
+  [wire]. A host can find the watch while the app holds it (it doesn't advertise then) via
+  `retrieveConnectedPeripherals`. Pause-and-resume handling and test results:
+  deepsealabs/libdc-swift#78. (Earlier report: a foregrounded Suunto app made requests fail
+  with -9 / timeouts. [app] @urbamax's A/B, 2026-09-06)
 - A stale iOS pairing gives "failed to handshake"; forget the watch in iOS settings.
 - **Both watches stop advertising when idle, and BLE traffic doesn't count as use** (measured
   2026-10-15/16 with a passive scan every 10-60 s from a Mac, nothing connecting):
