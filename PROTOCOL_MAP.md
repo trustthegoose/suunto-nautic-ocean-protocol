@@ -368,8 +368,8 @@ inside the HDLC `7E ... 7E`.
   records map a record id to its ordered field ids; PTH (field name paths such as
   `suunto/sml.Sample.DiveEvents.Alarm.Type`), FRM, DELTAREF and MOD records define names,
   types, scaling and enum values. The global `/DataFormat/Descriptors` is only the
-  top-level schema. Not yet fetched or archived by us; the /Summary GRPs (0x20-0x27) would
-  name every /Summary field (map 6.6). [app] [#29]
+  top-level schema. Now fetched for one dive on each watch and decoded (6.6); it names every
+  /Summary field and the /Data event types (7.1). [app] [#29] [schema]
 
 ---
 
@@ -625,10 +625,10 @@ descent time/distance, vertical speed, header duration, pause duration, average 
 | IMU (accel/gyro/mag) | /Data group `23` (Nautic) / `22` (Ocean): the id is assigned in the watch's Descriptors GRP table, so look it up there rather than inferring it from payload size | 10 Hz. `[dt int16][AlgoRelativeTimestamp u32 ms][DiveRouteAcc XYZ][DiveRouteGyro XYZ][DiveRouteMagn XYZ]`, all int16 raw counts (the schema gives no scaling). Gyro x 1/131 = deg/s (~0.01 deg/s when still; scale and per-axis asymmetry untested). Accel x 1/4096 reads ~2% low: fitting per-axis scale + bias to ~6-7k near-still samples per watch (Sep 14 AM) gives scale x1.019-1.023 (axes within 0.3% of each other), bias up to ~11 mg, residual 7-8 mg; cross-axis terms add nothing. Magnetometer needs full hard/soft-iron calibration: offsets ~600-1,750 counts (larger than the ~750-860-count Earth field), axis gains up to 1.39 relative to X, 12-17% residual even after fitting; no accel or magnetometer calibration is exported (only the gyro bias) | [driver] [schema] [wire-derived] |
 | Dive-route features | /Data group `24` (Nautic) / `23` (Ocean) | 5 x uint16 `DiveRouteFeatures`, inputs to the app's dead reckoning; meanings unknown. The X/Y/Z route itself is computed by the app, not stored | [driver] [schema] |
 | Gyro bias | /Summary DiveFooter +17/+21/+25 (f32), FigureOfMerit +29 | `DiveRouteGyroBias`; units unclear (1.04/0.31/1.08 on the Nautic vs ~0.01 deg/s measured when still) | [schema] [unknown] |
-| Events | /Data `18` alarm, `19` warning, `1A` notify, `1B` state | `[dt][Type][Active]` | [driver] |
+| Events | /Data `18` alarm, `19` warning, `1A` notify, `1B` state | `[dt][Type][Active]`. Type names from the per-dive schema (same on both watches; ids from the 2026-10 firmware): **alarm** 1 PO2 Low, 2 PO2 High, 3 Tank Pressure, 4 Gas Time, 5 Ascent Speed, 7 CNS100%, 8 OTU300, 10 Deco Stop Broken, 12 Deep Stop Broken, 13 Safety Stop Broken, 31 Depth, 50 Battery; **warning** 6 User PO2 High, 14 CNS80%, 15 OTU250, 20 NoDecoTime, 28 User Tank Pressure, 29 User Gas Time, 30 Sidemount, 31 Depth, 32 Dive Time, 42 User Ndl, 44 Recovery time, 50 Battery; **notify** 11 Gas Switch, 21 Setpoint switch (Nautic only), 28 User Tank Pressure, 29 User Gas Time, 30 Sidemount, 31 Depth, 32 Dive Time, 41 Stop done, 42 User Ndl, 44 Recovery time, 60 Bearing set, 61 Bearing cleared, 62 Stopwatch started, 63 Stopwatch reset; **state** 19 Ndl exceeded, 35-37 At Deco / Deep / Safety Stop, 38-40 Deco / Deep / Safety Stop Ahead. Seen on a watch: alarm 3 Tank Pressure on at a deliberate valve shut-off and purge (the tank pressure sample dropped to the purged hose pressure) and off 10 s later, after the valve was reopened; notify 60/61 bearing set/cleared | [driver] [schema] [wire] |
 | Dive state | /Data `1C` | 0 idling, 1 diving, 2 recovering | [driver] |
 | Dive active flag | /Data `1E` | | [driver] |
-| Dive-end reason | /Data `1D` (OOAM) | | [driver] |
+| Dive-end reason | /Data `1D` (OOAM) | 1 Out of battery, 2 Ceiling broken, 3 SW crash, 4 Max depth, 5 Algorithm changed, 6 Gauge dive | [driver] [schema] |
 | Gas switch | /Data `1F` | int16 gas number (0-based = cylinder slot) | [driver] |
 | Gradient factors | /Summary | u16 at 0x33 (high) and 0x35 (low), from the SBEM signature | [driver] |
 | Water type | /Summary byte 0x3E (from the SBEM signature) | 0 fresh, 1 EN13319, 2 salt. Consistent on all 33 of my dives against the density fitted from `12`/`16`, and confirmed against the cloud `DiveHeader.WaterType` (Fresh/EN13319/Salt dives, 2026-10-04). Prior art: latishab already decodes it as DC_FIELD_SALINITY in libdivecomputer#73 (commit `cd3dbc890`, 2026-09-08), but the deepsealabs fork that libdc-swift ships does not | [wire-derived] [cloud] |
