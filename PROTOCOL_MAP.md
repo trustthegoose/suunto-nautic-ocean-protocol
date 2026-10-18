@@ -16,7 +16,8 @@ downloading its dives, and where each piece of dive data lives.
 - **[cloud]** seen in Suunto cloud `workouts/<key>/sml` JSON.
 - **[cloud-matched]** a `/Summary` field found by matching every cloud dive-header number to
   the raw `/Summary` bytes (same offset on every dive of that watch). 2026-10-06, 6 dives
-  (2 Nautic, 4 Ocean), by a matching script. Offsets not yet checked on all dives.
+  (2 Nautic, 4 Ocean), by a matching script. Since checked on all 39 archived dives against the
+  schema and on 9 against the cloud (6.6).
 - **[schema]** stated by the watch's own per-dive `/Logbook/byId/<id>/Descriptors` schema
   (field names, types, enums, group ids), fetched 2026-10-07 from both watches.
 - **[headers]** confirmed by the public Movesense device-library headers
@@ -514,7 +515,17 @@ enum values. Fetched for one dive on both watches (Nautic 43,505 B, Ocean 43,140
 truncates it at 28,864 B) and decoded with `tools/descriptors_decode.py`; the full field lists
 with byte offsets are in `schema/summary_schema_{nautic,ocean}.txt`. Every cloud-matched
 offset below agrees with it, and its record lengths equal the real ones (DiveHeader 410/561,
-DiveFooter 507/658). Points it settles:
+DiveFooter 507/658).
+
+**Checked on every archived dive (2026-10-18):** all 39 raw `/Summary` records (14 Nautic, 25 Ocean,
+Aug 29 to Oct 18) decoded with the schema, 520 / 434 fields per dive. No enum value outside the
+schema and no NaN/inf in any float. Against the Suunto cloud (9 dives with a cloud copy, 6 of them
+in the `sml` format with DiveHeader and DiveFooter), 597 field/watch pairs agree on every dive,
+timestamps included once the `local64` format is applied, and cloud values rounded to the schema
+precision. The only disagreement: Header `ZoneSenseZones` Zone2Duration and Zone2/Zone3LowerLimit
+(+346 to +361) hold leftover memory on some Nautic dives (the bytes there resemble a `/Summary`
+page header, `0D 00 02 08 00 00 08 ...`, like the padding in 6.1), while the cloud shows 0 / 0.2 /
+0.5; don't rely on them. [wire] [cloud] Points the schema settles:
 - Gas record (45 B): State enum +0 (0 OC, 1 CCR diluent, 2 CCR oxygen, 3 Suit), **Oxygen
   int16 +1, Helium int16 +3**, PO2 f32 +5, TankSize f32 +9, TransmitterID/2 int32 +13/+17,
   TankFillPressure int32 +21, Start/End pressure +25/+29, Start2/End2 +33/+37 (int32 Pa),
