@@ -218,7 +218,9 @@ the bytes from the ACK rather than hardcoding them. A likely reading [headers] [
 fields, instance and execution context; a one-byte whiteboard id; a 16-bit local resource id),
 which makes that fourth byte the local resource id's high byte: `0x01..` for the logbook and
 `/Info` resources, `0x03..` for the file system and `/Meta/Hash`. The remaining two bytes
-(`80 00` / `80 01`) are unexplained.
+(`80 00` / `80 01`) are unexplained. Over 2,363 GET replies in our logs only two forms occur,
+always paired: `01 80 00` (every logbook, `/Info` and `/Sync` path we requested) and `03 80 01`
+(some of the Suunto app's requests). [wire]
 
 ### 4.4 Status codes (HTTP-like, u16 LE)
 
@@ -263,7 +265,10 @@ inside the HDLC `7E ... 7E`.
    A5 13 20 00 00 00 09 09 04 C2 40 14 C6 81 24 4A 20 0C 00 00 00 04 01 02
    00 00 00 00 00 01 00 00 00 00 00 00 00 00 9C 81 E4 E4
    ```
-   libdivecomputer only needs the round trip, but the content is mostly decoded. Both are
+   libdivecomputer only needs the round trip, but the content is mostly decoded. Each watch's
+   reply is byte-for-byte the same in every session we recorded (193 log files, 2026-09 to
+   10-18), and the two watches' replies differ only in the serial bytes, so none of it is
+   session state. [wire] Both are
    42-byte frames: header (4), msgid `00 00` (2), a 32-byte payload, CRC (4). The payload
    layout is the same in both directions:
 
@@ -271,11 +276,11 @@ inside the HDLC `7E ... 7E`.
    |---|---|---|---|---|
    | 0 | `09` | `09` | minimum comm-protocol version, 9 | [headers] `WB_COMM_PROTO_MIN_VERSION` |
    | 1 | `09` | `09` | current comm-protocol version, 9 | [headers] `WB_COMM_PROTO_CURRENT_VERSION` |
-   | 2 | `20` | `04` | unknown; differs host vs watch, likely a role or device class | [unknown] |
+   | 2 | `20` | `04` | unknown; differs host vs watch, likely a role or device class; `04` on both watches in every reply | [unknown] |
    | 3-14 | `16 45 56 41 10 04 41 10 0C 00 00 00` | the watch's packed serial | `SuuntoSerial`, 12 packed bytes | [headers] size; [wire] content |
    | 15-17 | `04 01 02` | `04 01 02` | Whiteboard library version 4.1.2 | [headers] `WbVersion.h` |
    | 18-22 | `00` x5 | `00` x5 | unknown (zero in every capture) | [unknown] |
-   | 23 | `03` | `01` | unknown; likely capability flags | [unknown] |
+   | 23 | `03` | `01` | unknown; likely capability flags; `01` on both watches in every reply | [unknown] |
    | 24-31 | `00` x8 | `00` x8 | unknown (zero in every capture) | [unknown] |
 
    **SuuntoSerial packing** [wire]: 16 six-bit characters filling the 12 bytes exactly
@@ -720,7 +725,7 @@ descent time/distance, vertical speed, header duration, pause duration, average 
 | Gas mixes | /Summary from 0xC7 | 45-byte record per gas: O2% +1, He% +2, PO2 max float32 +5, cylinder volume float32 m^3 +9; record index = GasNumber = cylinder slot | [driver] |
 | Daily trend data | `/Activity/TrendData`: GET, then FETCH with one parameter `[01][08 00][since u64 ms]` (type 8); reply 202 with a page of records | 40-byte records every 10 min, each starting with a u64 ms timestamp. On the Ocean (2026-10-08) "since 0" returned records from 2026-10-01 00:30 UTC, ~7.8 days back: **about one week kept on the watch**. A since of 2026-01-01 returned 416 | [wire] |
 | Sleep timeline | `/Daily/Sleep/Timeline/Data`: the app's FETCH names a file (`mdsSlp.sbm`) and the watch answers 201 Created, i.e. it **writes an export file** that the app then reads via `/Dev/FileSystem` | not read-only; not used by our tools | [app] |
-| Activity history | `/Activity/History/App/LastFourWeeks`: plain GET + FETCH, 78-byte reply of small counters (weekly summaries?) | format unknown | [wire] |
+| Activity history | `/Activity/History/App/LastFourWeeks`: plain GET + FETCH, 78-byte reply | format unknown. Two Ocean reads 10 days apart (2026-10-08, 10-18, chores and bucket dives in between): the first 54 bytes stayed identical (u32 values 2, 8, 0, 0, 4, 40, 51, 0, 4, 56; 51 is the dive ActivityType), the remaining f32 values changed (e.g. 52509.4 -> 8699.2, 3335.5, 8665.6, 2399.4), perhaps per-week totals | [wire] |
 | Serial, firmware, MACs | `/Info` | NUL-separated strings: maker, model, codename (Vaasa = Nautic, Porvoo = Ocean), serial, firmware version (e.g. 2.55.46 / 2.51.28), hardware revision, build identifiers, BLE and Wi-Fi MAC. No build date | [wire] [driver] |
 | Firmware per dive | /Summary Header `Device.Info.SW` | enum index; its text (the version the dive was recorded with) is in that dive's Descriptors (`enum:0=2.51.28`). The cloud record carries the same `SW` | [schema] [cloud] |
 
