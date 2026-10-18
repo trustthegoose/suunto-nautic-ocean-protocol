@@ -384,7 +384,10 @@ inside the HDLC `7E ... 7E`.
   make the watch answer 400 until reconnect [wire]. `/Logbook/UnsynchronisedLogs` and
   `/Sync/BusyState` are subscribable values. **BusyState changes are pushed** to a subscriber:
   DC Tester's Auto download got "busy" while connected, about 2 minutes before a tub dive began
-  (2026-10-16) [wire]. **`UnsynchronisedLogs` changes are pushed too**, on its handle (`F0 24 0D`
+  (2026-10-16) [wire]. BusyState is 1 while the watch is in its pre-dive (dive-ready) mode and
+  stays 1 through the dive's end-of-dive wait; the link stays up in pre-dive mode. After a dive,
+  `UnsynchronisedLogs` rises first and BusyState drops to 0 some 10-20 s later (2026-10-18, both
+  watches) [wire]. **`UnsynchronisedLogs` changes are pushed too**, on its handle (`F0 24 0D`
   on both watches), payload type `05` + u32 count: up when an entry is saved (1 after a dive, 2
   after a second entry) and down to 0 when the app marks the entries synced (2026-10-18, phone +
   Ocean and iPad + Nautic, Auto download listening) [wire].
