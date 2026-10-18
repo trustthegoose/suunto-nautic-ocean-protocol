@@ -519,9 +519,20 @@ DiveFooter 507/658). Points it settles:
   - A scrubbed copy of this dive's `/Summary` is attached to deepsealabs/libdc-swift#94.
   - How a dive is flagged as CCR: there is no dive-mode field in `/Summary`. Possibly the
     `/Data` activity chunk `08` (sport id plus a `customModeId` text field), or the gas states.
-  - Setpoint switches: CCR dives log them as events (`SetpointSwitch {Mode: Automatic, PO2: 0.7 /
-    1.3}` in Suunto app exports of two Nautic CCR dives, reported on deepsealabs/libdc-swift#29,
-    2026-09-24); their `/Data` encoding is unknown.
+  - Setpoint switches: **decoded on a Nautic CCR bucket dive with two manual switches** (2026-10-18,
+    dive 1792349453, matched against the Suunto cloud copy). [wire] [schema] [cloud]
+    - `Sample.DiveEvents.SetpointSwitch` (group id per dive; `0x20` on this one): after the 2-byte
+      time delta, PO2 f32 at +2 in **bar** (1.6, 0.5; the header's setpoints are in Pa), Mode enum at
+      +6 (0 Automatic, 1 Low, 2 High, 3 Custom).
+      Automatic switches use the same event: `SetpointSwitch {Mode: Automatic, PO2: 0.7 / 1.3}` in
+      Suunto app exports of two real Nautic CCR dives (deepsealabs/libdc-swift#29, 2026-09-24).
+    - `Sample.DiveEvents.Notify` (`0x1a`): Type enum at +2 (21 Setpoint switch, 11 Gas Switch, 61
+      Bearing cleared, ...), Active bool at +3. It tracks the on-screen message (on, then off 10 s
+      later) and was not logged for the second switch: use the SetpointSwitch records.
+    - No SetpointSwitch at dive start: the dive begins on the header's low setpoint.
+    - `GasSwitch` (`0x1f`, GasNumber int16 at +2) logs gas 0 (the diluent) at the start.
+    - The activity record stays 51 / "51" in CCR mode.
+    - On the watch, the switch is in the dive's change menu (down button), next to "add gas".
   - The Ocean's schema has no setpoint block (5 gas slots, records end at the gas array).
   - The libdivecomputer parser currently treats the Nautic and Ocean as open-circuit only:
     every dive is reported as OC, gases get no diluent/oxygen role, and no setpoints are emitted.
