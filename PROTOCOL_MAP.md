@@ -99,7 +99,7 @@ Bluetooth LE GATT  service 61353090-8231-49cc-b57a-886370740041
   stream stall coincided with one of those replies, and dives came out truncated (2026-10-15)
   [wire]. A host can find the watch while the app holds it (it doesn't advertise then) via
   `retrieveConnectedPeripherals`. Pause-and-resume handling and test results:
-  deepsealabs/libdc-swift#78. (Earlier report: a foregrounded Suunto app made requests fail
+  deepsealabs/libdc-swift#78; session rules in 5.8. (Earlier report: a foregrounded Suunto app made requests fail
   with -9 / timeouts. [app] @urbamax's A/B, 2026-09-06)
 - A stale iOS pairing gives "failed to handshake"; forget the watch in iOS settings.
 - **Both watches stop advertising when idle, and BLE traffic doesn't count as use** (measured
@@ -368,8 +368,10 @@ inside the HDLC `7E ... 7E`.
   make the watch answer 400 until reconnect [wire]. `/Logbook/UnsynchronisedLogs` and
   `/Sync/BusyState` are subscribable values. **BusyState changes are pushed** to a subscriber:
   DC Tester's Auto download got "busy" while connected, about 2 minutes before a tub dive began
-  (2026-10-16) [wire]. Whether `UnsynchronisedLogs` changes are pushed too is [unknown] (seen
-  only as a value read on reconnect, 2 -> 3 after a new dive).
+  (2026-10-16) [wire]. **`UnsynchronisedLogs` changes are pushed too**, on its handle (`F0 24 0D`
+  on both watches), payload type `05` + u32 count: up when an entry is saved (1 after a dive, 2
+  after a second entry) and down to 0 when the app marks the entries synced (2026-10-18, phone +
+  Ocean and iPad + Nautic, Auto download listening) [wire].
 - Re-lists /Logbook/Entries twice per sync and fetches /Summary several times per dive.
 - Reads the per-dive schema **`/Logbook/byId/<id>/Descriptors`** before /Summary and /Data
   when a dive is opened (path seen in a PacketLogger capture of the Suunto app; latishab decoded it on
@@ -379,6 +381,36 @@ inside the HDLC `7E ... 7E`.
   types, scaling and enum values. The global `/DataFormat/Descriptors` is only the
   top-level schema. Now fetched for one dive on each watch and decoded (6.6); it names every
   /Summary field and the /Data event types (7.1). [app] [#29] [schema]
+
+### 5.8 Sharing the link: sessions
+
+Measured 2026-10-18 on the Nautic (fw 2.55.46): a Mac with several client processes on one link,
+then the Suunto app (3.15.0) on an iPhone (Ocean, fw 2.51.28) and an iPad (Nautic). [wire]
+
+- **A session belongs to the link, not to a client.** A Hello opens it; afterwards the watch
+  answers requests from any client on that link, including one that never sent a Hello. It
+  survives another client's streams, UNSUBSCRIBEs and RELEASEs, and the disconnect of the client
+  that opened it, as long as some client keeps the link up.
+- **With no session, a request without a Hello is ignored** (no reply). So a host can tell
+  whether another client already has a session: send a request first and say Hello only if it
+  goes unanswered. (Exception: while any client's `/Data` stream is running, a client that never
+  sent a Hello gets no reply either; wait until the link is quiet, then ask.)
+- **A Hello takes the session over.** The Suunto app answers a foreign Hello with its own,
+  usually within a second (the ping-pong). When it doesn't, typically when the Hello lands in a
+  quiet gap during its sync, it keeps sending requests but no longer uses the replies: one
+  request about every 10 s, each answered by the watch, no follow-up, "sync done" without the
+  new dives, until the app is restarted. Seen on both phones (2026-10-18). A host that uses the
+  existing session instead of saying Hello avoids it; the same test then left both apps healthy.
+- **Likely one `/Data` stream at a time.** The Suunto app's other requests are answered while we
+  stream, but its request for the same dive's `/Data` during our stream drew no reply that we could
+  see; the app reported "sync failed" and retried by itself about 3.5 min later, successfully
+  (one instance, 2026-10-18). [inferred]
+- **HDLC sync when joining mid-stream.** Stream frames come back to back (`7E ... 7E 7E ... 7E`).
+  A reader that starts inside a frame and treats a closing flag as an opening one returns an
+  empty frame at every flag and never resynchronises while the stream lasts, so it sees nothing,
+  including replies meant for it. Treat two flags in a row as the start of the next frame.
+  [driver]
+- Driver changes and test logs: deepsealabs/libdivecomputer#16, deepsealabs/libdc-swift#78.
 
 ---
 
@@ -441,8 +473,10 @@ offset  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 2
   Nautic fw 2.55.46 and Ocean fw 2.51.28): present at the end of every stream, never earlier,
   offset chain unbroken. [wire] A driver could stop on it instead of waiting for silence, but
   should keep the silence / `STREAM_END` fallback: other models (Nautic S) and firmware are
-  unchecked, and no capture yet shows an interrupted transfer, to confirm the marker is absent
-  there.
+  unchecked. An interrupted stream ends **without** the marker: when another client's
+  UNSUBSCRIBE ends it, the chunks just stop (seen on both watches, 2026-10-16 to 10-18, Suunto app
+  and a second Mac client); after another client's Hello it ends with a torn chunk or a 404
+  `UNSUBSCRIBE_REPLY`. So the marker means "complete". [wire]
 - The 28-byte "MDS" header is counted from the frame's first byte (`A5`); the payload size
   is the u16 LE at frame offset 20, and the payload starts at offset 28. [driver] [wire] [max]
 - Stream chunks carry msgid `0000` and the resource's static handle `F0 24 0E`, not the
@@ -508,7 +542,7 @@ DiveFooter 507/658). Points it settles:
 - **CCR (Nautic only): header fields verified on a CCR bucket dive** (2026-10-18; set: low 0.5 /
   high 1.6, switch 10 ft / 59 ft, automatic, diluent 15/46 in an AL50; CCR mode adds an oxygen
   gas by itself). On open-circuit dives these bytes are zero. [wire]
-  - Setpoint block, DiveHeader +545 (and DiveFooter +642, not checked): Low and High are f32
+  - Setpoint block, DiveHeader +545 and DiveFooter +642 (identical on both CCR dives): Low and High are f32
     **Pa** (read 50000.0 / 160000.0 = 0.5 / 1.6 bar), SwitchDepthLow/High int8 metres (3 / 18),
     SetpointIsAutomatic 1, SetpointIsCustom 0, Custom (f32).
   - Gas record State 1 = CCR diluent (read 15/46, TankSize 0.007 m3), 2 = CCR oxygen (100/0,
@@ -747,6 +781,8 @@ Top level `{"Summary": {"Samples": [...]}, "Data": {"Samples": [...]}}`; every s
 | 423 Locked | previous stream handle still bound | stream stop + release, retry with backoff |
 | -9 / timeouts while the Suunto app is open | the app's traffic on the same link | close the app (driver now skips foreign frames) |
 | "failed to handshake" | stale iOS pairing | forget the watch in iOS |
+| Suunto app "sync done" without the new dive, requests every ~10 s | another client's Hello took its session; the app didn't re-open it | no Hello over an existing session (5.8; deepsealabs/libdivecomputer#16); restart the app to recover |
+| Nothing received while another client streams | HDLC reader out of sync on back-to-back frames | skip empty frames (5.8; #16) |
 
 ---
 
@@ -754,7 +790,6 @@ Top level `{"Summary": {"Samples": [...]}, "Data": {"Samples": [...]}}`; every s
 
 - The constant Entries header fields (the u16 at +2, the u32 = 12 at +10) and `w1`'s low byte
   (always 1); the varying bytes look like struct padding (6.1).
-- Whether `/Logbook/UnsynchronisedLogs` changes are pushed to a subscriber (BusyState's are; 5.7).
 - Hello payload bytes 2 and 23 (host vs watch values differ), and whether the watch would
   accept a different host identity. The rest of the Hello is decoded in 5.1.
 - Dive retention: answered in 7.3.
