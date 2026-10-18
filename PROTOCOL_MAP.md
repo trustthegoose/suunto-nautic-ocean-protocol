@@ -491,14 +491,32 @@ DiveFooter 507/658). Points it settles:
 - DiveHeader: +24 DeactivationTimeout, +41 SafetyStopTime (both int32); +32 Algorithm enum
   (0 Off, 1 Suunto RGBM, 2 Buhlmann); +33 Altitude, +35 Conservatism (int16); +45
   LastDecoStopDepth enum (3 = 3 m, 6 = 6 m); +46 AscentModeStepped, +47 OOAM (bool).
+  **Verified on both watches** (2026-10-18, bucket dives with distinct settings): [wire]
+  - DeactivationTimeout = the dive end time in seconds (1 min reads 60).
+  - Algorithm 2 on both (the Ocean offers no other choice); HighGf +37 / LowGf +39 read 82/34
+    (Nautic) and 50/40 (Ocean), as set.
+  - Altitude is the menu index, not a height: 0 = 0-980 ft, 1 = 980-4900 ft, 2 = 4900-9800 ft
+    (Ocean 1, Nautic 2).
+  - SafetyStopTime in seconds: 5 min reads 300. The Ocean's "Adjusted" setting reads 180, the
+    same as a 3-minute stop.
+  - LastDecoStopDepth 6 (20 ft) and 3 (10 ft); AscentModeStepped 1 (stepped) and 0 (continuous).
+  - Gas TankFillPressure (+21) differs in units between the watches: the Nautic stores Pa
+    (23200000), the Ocean bar (232). A twin set ("2x AL72") is stored as one gas with the combined
+    TankSize (0.02 m3).
 - Nautic's extra 151 B per record = 3 more gas slots (8 vs 5) + a 16-B CCR Setpoint block
   (Low/High f32, SwitchDepthLow/High int8, IsAutomatic/IsCustom bool, Custom f32).
-- **CCR (Nautic only): every field is schema-only, none verified on a CCR dive.** On all of
-  our dives (open circuit) these bytes are zero. [schema] [unknown]
-  - Setpoint block, DiveHeader +545 and DiveFooter +642: Low and High (f32 bar),
-    SwitchDepthLow/High (int8), SetpointIsAutomatic/IsCustom (bool), Custom (f32).
-  - Gas record State 1 = CCR diluent, 2 = CCR oxygen: only 0 (OC) seen so far; the meaning of
-    the gas PO2 field (+5) for a diluent is unknown.
+- **CCR (Nautic only): header fields verified on a CCR bucket dive** (2026-10-18; set: low 0.5 /
+  high 1.6, switch 10 ft / 59 ft, automatic, diluent 15/46 in an AL50; CCR mode adds an oxygen
+  gas by itself). On open-circuit dives these bytes are zero. [wire]
+  - Setpoint block, DiveHeader +545 (and DiveFooter +642, not checked): Low and High are f32
+    **Pa** (read 50000.0 / 160000.0 = 0.5 / 1.6 bar), SwitchDepthLow/High int8 metres (3 / 18),
+    SetpointIsAutomatic 1, SetpointIsCustom 0, Custom (f32).
+  - Gas record State 1 = CCR diluent (read 15/46, TankSize 0.007 m3), 2 = CCR oxygen (100/0,
+    0.003 m3), in both the DiveHeader and DiveFooter gas arrays. The record order is diluent first, then
+    oxygen, but the watch's gas menu lists the oxygen (NX100) above the diluent and numbers neither,
+    so the record index is not the menu order. Both gases' PO2 field (+5) reads
+    1.399; its meaning for a diluent is still unknown.
+  - A scrubbed copy of this dive's `/Summary` is attached to deepsealabs/libdc-swift#94.
   - How a dive is flagged as CCR: there is no dive-mode field in `/Summary`. Possibly the
     `/Data` activity chunk `08` (sport id plus a `customModeId` text field), or the gas states.
   - Setpoint switches: CCR dives log them as events (`SetpointSwitch {Mode: Automatic, PO2: 0.7 /
@@ -508,6 +526,7 @@ DiveFooter 507/658). Points it settles:
   - The libdivecomputer parser currently treats the Nautic and Ocean as open-circuit only:
     every dive is reported as OC, gases get no diluent/oxygen role, and no setpoints are emitted.
     [driver]
+    Confirmed with the CCR dive above; reported as deepsealabs/libdc-swift#94.
 - GPS: int32 degrees x 1e7 (schema: PI*x/(1e7*180) radians); GPSAltitude uint16, x/5 - 1000 m.
 - `local64` times (e.g. DiveFooter `DiveLocation.Start/Stop.DateTime`): **local wall-clock milliseconds**
   in the low 7 bytes, flag byte `0xF0` on top. The GPS start/stop "DateTime" equals the dive's start
