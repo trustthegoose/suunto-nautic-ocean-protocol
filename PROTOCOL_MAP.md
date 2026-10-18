@@ -283,6 +283,16 @@ inside the HDLC `7E ... 7E`.
    | 23 | `03` | `01` | unknown; likely capability flags; `01` on both watches in every reply | [unknown] |
    | 24-31 | `00` x8 | `00` x8 | unknown (zero in every capture) | [unknown] |
 
+   **What the watch checks in a host Hello** (2026-10-18, Nautic fw 2.55.46, a Mac client on a fresh
+   link, each Hello followed by a GET of `/Info`) [wire]:
+   - Bytes 0-1 must be exactly `09 09`. 8 or 10 in either byte (min 8 / current 9 included) gets no
+     reply at all: the Hello is dropped silently.
+   - The host serial (bytes 3-14) must be well-formed: digits and capital letters. `FCSD00000002` or
+     `EGSD00000002` work as well as `ECSD00000002`, so there's no allow-list of known apps; a serial
+     containing `@` or a lowercase letter, or an all-zero one, gets no reply.
+   - Bytes 2 and 23 (any of `00`, `04`, `20`; `00`, `01`, `03`) and the Whiteboard version (bytes
+     15-17) are not checked, and the watch's reply is the same whatever the host sends.
+
    **SuuntoSerial packing** [wire]: 16 six-bit characters filling the 12 bytes exactly
    (16 x 6 = 96 bits), least-significant bit first from the field's first bit. Each
    character is stored as **its ASCII code minus 0x2F** ('0' = 1, '9' = 10, 'C' = 20, range
@@ -806,8 +816,8 @@ Top level `{"Summary": {"Samples": [...]}, "Data": {"Samples": [...]}}`; every s
 
 - The constant Entries header fields (the u16 at +2, the u32 = 12 at +10) and `w1`'s low byte
   (always 1); the varying bytes look like struct padding (6.1).
-- Hello payload bytes 2 and 23 (host vs watch values differ), and whether the watch would
-  accept a different host identity. The rest of the Hello is decoded in 5.1.
+- The meaning of Hello payload bytes 2 and 23 (host vs watch values differ, but the watch doesn't
+  check them; it accepts any well-formed host identity, 5.1). The rest of the Hello is decoded in 5.1.
 - Dive retention: answered in 7.3.
 - libdivecomputer#73, the upstream branch, does not yet carry any of the 1.16.1 / 1.17.1 fixes
   (still at `7288977`, last updated 2026-09-26). Answered by latishab on #29 (2026-10-04): the
