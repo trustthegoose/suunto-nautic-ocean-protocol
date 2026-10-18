@@ -782,7 +782,7 @@ Top level `{"Summary": {"Samples": [...]}, "Data": {"Samples": [...]}}`; every s
 | -9 / timeouts while the Suunto app is open | the app's traffic on the same link | close the app (driver now skips foreign frames) |
 | "failed to handshake" | stale iOS pairing | forget the watch in iOS |
 | Suunto app "sync done" without the new dive, requests every ~10 s | another client's Hello took its session; the app didn't re-open it | no Hello over an existing session (5.8; deepsealabs/libdivecomputer#16); restart the app to recover |
-| Nothing received while another client streams | HDLC reader out of sync on back-to-back frames | skip empty frames (5.8; #16) |
+| Nothing received while another client streams | HDLC reader out of sync on back-to-back frames | skip empty frames (5.8; deepsealabs/libdivecomputer#16) |
 
 ---
 
