@@ -402,6 +402,14 @@ inside the HDLC `7E ... 7E`.
   `/Media/Player/Control`, `/Media/Player/State` and `/Media/Track/Info`, answered 200 by the Suunto
   app (music control and notification actions), using the same RPC frames in the other direction.
   Not seen in any iOS capture. [wire] [#29] (pyrignis's Android Bluetooth logs, Sep 2026)
+- **Captures of a Suunto app sync contain the user's cloud session key.** On every sync captured
+  (iOS and Android, 4 users) the app GETs `/Settings/Wifi/Cloud/STTAuthorization` and PUTs a
+  29-character string to it, different for each user and the same across one user's captures:
+  almost certainly the Suunto cloud session key (`STTAuthorization` is the header the cloud API
+  uses for it), handed to the watch for Wi-Fi downloads. Don't post raw PacketLogger or btsnoop
+  captures of an app sync; if one was posted, change the Suunto account password, which should
+  end the old session. The key is not the password, and no email or password appears in the
+  captures. [wire] [inferred]
 - Re-lists /Logbook/Entries twice per sync and fetches /Summary several times per dive.
 - Reads the per-dive schema **`/Logbook/byId/<id>/Descriptors`** before /Summary and /Data
   when a dive is opened (path seen in a PacketLogger capture of the Suunto app; latishab decoded it on
