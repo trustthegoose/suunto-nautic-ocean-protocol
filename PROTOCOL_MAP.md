@@ -283,6 +283,13 @@ inside the HDLC `7E ... 7E`.
    | 23 | `03` | `01` | unknown; likely capability flags; `01` on both watches in every reply | [unknown] |
    | 24-31 | `00` x8 | `00` x8 | unknown (zero in every capture) | [unknown] |
 
+   **Across other people's captures** (shared on deepsealabs/libdc-swift#29, Sep 2026): every
+   host Hello is 9/9 with byte 2 `20`, byte 23 `03` and Whiteboard 4.1.2. The host identity is
+   `ECSD00000002` from the iOS Suunto app (5 captures) and from DC Tester, and **`ECSD00000003`
+   from the Android Suunto app** (3 captures), so the last digit looks like the platform. The watch
+   reply is the same on 5 watches (Nautic S x2, Nautic, Ocean x2): 9/9, byte 2 `04`, byte 23 `01`,
+   the rest zero apart from the serial. [wire] [#29]
+
    **What the watch checks in a host Hello** (2026-10-18, Nautic fw 2.55.46, a Mac client on a fresh
    link, each Hello followed by a GET of `/Info`) [wire]:
    - Bytes 0-1 must be exactly `09 09`. 8 or 10 in either byte (min 8 / current 9 included) gets no
@@ -391,6 +398,10 @@ inside the HDLC `7E ... 7E`.
   on both watches), payload type `05` + u32 count: up when an entry is saved (1 after a dive, 2
   after a second entry) and down to 0 when the app marks the entries synced (2026-10-18, phone +
   Ocean and iPad + Nautic, Auto download listening) [wire].
+- **On Android the watch also makes requests to the phone**: GET `/Media/Notification/Action`,
+  `/Media/Player/Control`, `/Media/Player/State` and `/Media/Track/Info`, answered 200 by the Suunto
+  app (music control and notification actions), using the same RPC frames in the other direction.
+  Not seen in any iOS capture. [wire] [#29] (pyrignis's Android Bluetooth logs, Sep 2026)
 - Re-lists /Logbook/Entries twice per sync and fetches /Summary several times per dive.
 - Reads the per-dive schema **`/Logbook/byId/<id>/Descriptors`** before /Summary and /Data
   when a dive is opened (path seen in a PacketLogger capture of the Suunto app; latishab decoded it on
