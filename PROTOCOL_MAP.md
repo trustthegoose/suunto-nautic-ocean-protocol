@@ -830,14 +830,17 @@ Top level `{"Summary": {"Samples": [...]}, "Data": {"Samples": [...]}}`; every s
 
 - The constant Entries header fields (the u16 at +2, the u32 = 12 at +10) and `w1`'s low byte
   (always 1); the varying bytes look like struct padding (6.1).
-- The meaning of Hello payload bytes 2 and 23 (host vs watch values differ, but the watch doesn't
-  check them; it accepts any well-formed host identity, 5.1). The rest of the Hello is decoded in 5.1.
-- Dive retention: answered in 7.3.
-- libdivecomputer#73, the upstream branch, does not yet carry any of the 1.16.1 / 1.17.1 fixes
-  (still at `7288977`, last updated 2026-09-26). Answered by latishab on #29 (2026-10-04): the
-  transport fixes (complete downloads, paging, size check, foreach gap, per-dive handles,
-  message ids) and the dive time / max depth parser fix are portable and she'll update #73
-  when they go on; subscription and auto-sync stay on the deepsealabs fork, since #73 has no
-  Nautic-specific public API. Open only until the port lands.
-- The two driver copies have drifted both ways: #73 lacks the transport fixes above, and the
-  deepsealabs fork lacks #73's water type / salinity decode (`cd3dbc890`).
+- The meaning of the Hello's bytes 2 and 23 (the watch doesn't check them, and accepts any
+  well-formed host identity; 5.1).
+- Whether the watch serves only one `/Data` stream at a time (5.8; seen once).
+- What the Activity History reply's float fields are (7.1).
+- Porting the transport fixes upstream: libdivecomputer/libdivecomputer#73 has carried per-dive
+  handles and their release since 2026-10-16, but not the rest of the libdc-swift 1.16.1 / 1.17.1
+  fixes (paging, size check, foreach gap, message ids, the dive time / max depth parser fix); Jef's
+  review there (2026-10-18) flags the /Summary page CRC and the ignored /Summary errors. latishab
+  plans to port them (deepsealabs/libdc-swift#29, 2026-10-04); subscription and auto-sync stay on
+  the deepsealabs fork. Open until the port lands.
+
+Answered since and removed from this list: dive retention (7.3); whether `UnsynchronisedLogs`
+changes are pushed (5.7); whether the watch accepts another host identity (5.1); the water type /
+salinity decode missing from the deepsealabs fork (it decodes `/Summary` 0x3E now).
