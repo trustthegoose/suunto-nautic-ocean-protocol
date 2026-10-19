@@ -472,7 +472,11 @@ then the Suunto app (3.15.0) on an iPhone (Ocean, fw 2.51.28) and an iPad (Nauti
 01 24 | BE 25 70 73 | count:u32 | 0C 00 00 00 | 45 00 00 00 | records ...
 ```
 - Header fields, compared over 16 captures (2026-10-03 to 10-07, both watches): `01 24` at +0
-  and a u16 at +2 (`FE 24` Nautic, `BE 25` Ocean page 1, `86 24` Ocean page 2) are constant;
+  and a u16 at +2 (`FE 24` Nautic, `BE 25` Ocean page 1, `86 24` Ocean page 2) looked constant,
+  but the u16 at +2 is **`0x2400` + the byte length from +4 to the end (14 + 24 x count)**: true on
+  all 104 distinct Entries pages we have (1,060 records, 13 datasets including captures and files
+  shared on deepsealabs/libdc-swift#29, Nautic, Nautic S and Ocean), so the count appears twice and
+  can be cross-checked;
   **count** is a u16 at +6 (10, 18, 5); a u32 at +10 is always 12. The bytes at +4 (2), +8 (2)
   and +14 (4) change on every capture and hold ASCII fragments ("tem_", "es.s", "ps") and
   RAM-like addresses (`0x1002xxxx`): **struct alignment padding** copied out uncleared, not
@@ -494,7 +498,10 @@ then the Suunto app (3.15.0) on an iPhone (Ocean, fw 2.51.28) and an iPad (Nauti
   - `size` = compressed /Data + /Summary data bytes (the completeness check).
 - Example: `A1228E6A 10248E6A 01000000 00000000 70DB0000 00000000` = start 0x6A8E22A1,
   end 0x6A8E2410, size 56,176. [wire]
-- Ids are 4-aligned; scanning unaligned can invent a phantom dive. [driver]
+- Records sit at 4-byte-aligned positions in the reply frame (frame offset 32 + 24k); scanning at
+  unaligned positions can invent a phantom dive. The ids themselves are plain start times and
+  needn't be multiples of 4 (774 of 1,060 aren't). On all 1,060 records: start < end within a day,
+  `w1`'s low byte `01`, the last u32 0, a plausible size. [driver] [wire]
 
 ### 6.2 `/Summary` pages
 
@@ -852,8 +859,9 @@ Top level `{"Summary": {"Samples": [...]}, "Data": {"Samples": [...]}}`; every s
 
 ## 9. Open questions
 
-- The constant Entries header fields (the u16 at +2, the u32 = 12 at +10) and `w1`'s low byte
-  (always 1); the varying bytes look like struct padding (6.1).
+- The constant Entries header fields (the u32 = 12 at +10) and `w1`'s low byte (always 1, on
+  1,060 records from 13 datasets); the varying bytes look like struct padding (6.1). The u16 at +2
+  is a length (6.1).
 - The meaning of the Hello's bytes 2 and 23 (the watch doesn't check them, and accepts any
   well-formed host identity; 5.1).
 - Whether the watch serves only one `/Data` stream at a time (5.8; seen once).
