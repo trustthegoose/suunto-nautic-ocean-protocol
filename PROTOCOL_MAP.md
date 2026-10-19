@@ -569,6 +569,10 @@ page header, `0D 00 02 08 00 00 08 ...`, like the padding in 6.1), while the clo
   - DeactivationTimeout = the dive end time in seconds (1 min reads 60).
   - Algorithm 2 on both (the Ocean offers no other choice); HighGf +37 / LowGf +39 read 82/34
     (Nautic) and 50/40 (Ocean), as set.
+  - Conservatism (+35): these watches set conservatism only through the GF (presets Low 45/95,
+    Medium 40/85, High 35/75, or custom, per Suunto's Nautic guide). It reads 0 on all 37 archived
+    dives at 40/85 (the Medium preset) and on both custom-GF dives. Whether the Low or High preset
+    sets it (e.g. -1 / +1) is untested; there's no other preset field in the schema. [wire]
   - Altitude is the menu index, not a height: 0 = 0-980 ft, 1 = 980-4900 ft, 2 = 4900-9800 ft
     (Ocean 1, Nautic 2).
   - SafetyStopTime in seconds: 5 min reads 300. The Ocean's "Adjusted" setting reads 180, the
