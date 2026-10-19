@@ -42,6 +42,18 @@ Related: deepsealabs/libdc-swift#29 and #56-#61, libdivecomputer/libdivecomputer
 | Ocean | `Porvoo` | `Seal_RevA3` | [cloud] app/cloud exports, fw 2.51.28 and 2.40.56 |
 | Nautic S | `Ylivieska` | `Seal_Lite_RevA3` | reported by K4pisa from his app exports, deepsealabs/libdc-swift#29 (2026-09-01); not in our own data |
 
+**Nautic S `/Summary` layout** (from Nautic S downloads and cloud records shared on
+deepsealabs/libdc-swift#29, fw 2.54.12, Sep 2026; those downloads predate the paging fix, so only
+offsets inside the first records and the record lengths are trusted): the Ocean's record ids and
+lengths, DiveHeader `0x20` 410 B and DiveFooter `0x21` 507 B, but the Windows `0x26` (x3) and
+Header `0x24` records are **4 bytes longer** (243 / 374 vs 239 / 370). In the Header, every field
+up to DepthAverage (+338) sits at the Ocean's offset and matches the cloud on both K4pisa dives
+checked (duration, energy, HR zones, battery, temperatures, DiveTime, Depth.Max, DepthAverage);
+the ZoneSense lower limits match only 4 bytes later, so the extra field is in the ZoneSense block
+(+342 to +353). In the Windows record the first fields (to Energy, +25) are at the Ocean's
+offsets; where its extra 4 bytes sit isn't pinned. A Nautic S Descriptors schema would settle
+both. [wire] [cloud] [#29]
+
 The Nautic S shares the Ocean's "Seal" hardware family, not the Nautic's "GT": consistent
 with the Nautic S and some Ocean firmware both writing the 141-byte `16` record where the
 Nautic writes 195 bytes (section 7). Match a device on its advertised BLE name, or on
