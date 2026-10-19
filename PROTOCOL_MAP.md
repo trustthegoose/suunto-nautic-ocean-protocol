@@ -571,7 +571,8 @@ enum values. Fetched for one dive on both watches (Nautic 43,505 B, Ocean 43,140
 truncates it at 28,864 B) and decoded with `tools/descriptors_decode.py`; the full field lists
 with byte offsets are in `schema/summary_schema_{nautic,ocean}.txt`. Every cloud-matched
 offset below agrees with it, and its record lengths equal the real ones (DiveHeader 410/561,
-DiveFooter 507/658).
+DiveFooter 507/658; the Nautic S has the Ocean's lengths except Windows 243 and Header 374, see
+Models).
 
 **Checked on every archived dive (2026-10-18):** all 39 raw `/Summary` records (14 Nautic, 25 Ocean,
 Aug 29 to Oct 18) decoded with the schema, 520 / 434 fields per dive. No enum value outside the
@@ -696,6 +697,15 @@ where known (e.g. DiveFooter +8). Multi-byte values are little-endian. [cloud-ma
 | Average depth | 2306 (also 1938) | 2004 (also 1636) | f32, m, Header +338 (also Window 3 +215) | no (driver averages the samples) | [cloud-matched] |
 | Feeling (the post-dive "How was this dive?" answer) | 2239 | 1937 | int32, Header +271 (schema `Header.Feeling`): 1-5, 0 = not answered | no | [schema] [cloud-matched]: all 22 archived Ocean dives match the cloud `feeling` (5 <-> 5, 0 <-> null) |
 | Water temperature min / max | ~1342 / 1346 | ~1044 / 1040 | f32, K | no (driver uses samples) | [cloud-matched] |
+
+**Nautic S** (no column of its own; derived from its record layout, see Models): the same as the
+Ocean column through the DiveFooter (DiveHeader 410 B and DiveFooter 507 B are the Ocean's, so GF,
+water type, tissues and the gas records sit at the Ocean's offsets). Each of the three Windows
+records is 4 bytes longer, so window fields move by up to 4 bytes per earlier window and the Header
+record starts **12 bytes later** than the Ocean's (e.g. Header +321 dive time, +330 max depth and
++338 average depth at Ocean offset + 12). Inside the Header, offsets match the Ocean's through +338;
+past +341 they are 4 more. Prefer the record-relative offsets: the record walk finds each record
+wherever it starts. [wire] [cloud] [#29]
 
 **Record-relative offsets** (second pass, 2026-10-06: each cloud field searched only inside its
 own record on all 6 dives at once) [cloud-matched]:
