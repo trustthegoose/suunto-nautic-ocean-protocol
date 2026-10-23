@@ -451,10 +451,21 @@ then the Suunto app (3.15.0) on an iPhone (Ocean, fw 2.51.28) and an iPad (Nauti
   request about every 10 s, each answered by the watch, no follow-up, "sync done" without the
   new dives, until the app is restarted. Seen on both phones (2026-10-18). A host that uses the
   existing session instead of saying Hello avoids it; the same test then left both apps healthy.
-- **Likely one `/Data` stream at a time.** The Suunto app's other requests are answered while we
-  stream, but its request for the same dive's `/Data` during our stream drew no reply that we could
-  see; the app reported "sync failed" and retried by itself about 3.5 min later, successfully
-  (one instance, 2026-10-18). [inferred]
+- **A `/Data` request is ignored while, or just after, another client is busy.** The Suunto app's
+  request for a dive's `/Data` during our stream drew no reply (it reported "sync failed" and retried
+  by itself ~3.5 min later; 2026-10-18), and three times our own GET of `/Data` got no reply while or
+  right after the app was syncing, while our list and `/Summary` GETs at the same moment were answered
+  (2026-10-23, Ocean, stock DC Tester builds 22 and 23). A retry after the app is idle is answered
+  (build 23 retries after ~7 s). [wire]
+- **The Suunto app retries its Hello until the link is quiet.** With our stream running, each app Hello
+  ended our stream (`UNSUBSCRIBE_REPLY` 404); a driver that restarts at once was ended again by the next
+  Hello ~10 s later, two or three times, and the app only began its sync ~5 s after we gave up
+  (2026-10-23, build 23). Standing aside until the link is quiet avoids the fight.
+- **After a link drop and reconnect, the watch hands back the same `/Data` handle** (`00 24 0E`,
+  2026-10-23, builds 22 and 23).
+- **No second host:** while connected to one phone the watch doesn't advertise, so another device can't
+  find it (a 60 s Mac scan and a 30 s connect attempt with the Ocean awake on the wrist, 2026-10-23).
+  Several apps on one host share the link; two hosts can't. [wire]
 - **HDLC sync when joining mid-stream.** Stream frames come back to back (`7E ... 7E 7E ... 7E`).
   A reader that starts inside a frame and treats a closing flag as an opening one returns an
   empty frame at every flag and never resynchronises while the stream lasts, so it sees nothing,
@@ -874,7 +885,7 @@ Top level `{"Summary": {"Samples": [...]}, "Data": {"Samples": [...]}}`; every s
   is a length (6.1).
 - The meaning of the Hello's bytes 2 and 23 (the watch doesn't check them, and accepts any
   well-formed host identity; 5.1).
-- Whether the watch serves only one `/Data` stream at a time (5.8; seen once).
+- Whether the watch serves only one `/Data` stream at a time, or ignores `/Data` requests for some other reason while another client is busy (5.8; seen four times).
 - What the Activity History reply's float fields are (7.1).
 - Porting the transport fixes upstream: libdivecomputer/libdivecomputer#73 has carried per-dive
   handles and their release since 2026-10-16, but not the rest of the libdc-swift 1.16.1 / 1.17.1
