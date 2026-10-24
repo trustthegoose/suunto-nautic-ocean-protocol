@@ -232,7 +232,13 @@ which makes that fourth byte the local resource id's high byte: `0x01..` for the
 `/Info` resources, `0x03..` for the file system and `/Meta/Hash`. The remaining two bytes
 (`80 00` / `80 01`) are unexplained. Over 2,363 GET replies in our logs only two forms occur,
 always paired: `01 80 00` (every logbook, `/Info` and `/Sync` path we requested) and `03 80 01`
-(some of the Suunto app's requests). [wire]
+(some of the Suunto app's requests). [wire] **They are chosen by the requester and echoed:** the Suunto app sends
+`03 80 01` on `/Dev/FileSystem*` and `/Meta/Hash` and `01 80 00` elsewhere, and every reply carries its
+request's value. A GET of `/Info` on the Nautic with other values (`01 80 05`, `01 00 00`, `00 00 00`,
+`25 80 01`, ...) was always answered (status 200) and echoed, except that the watch clears bits `0x10`
+and `0x40` of the first byte (`11` -> `01`, `F1` -> `A1`). So it's an unchecked requester id; a
+Whiteboard `ClientId` (flags/execution context, then a local client id with the `0x8000` bit,
+`whiteboard/Identifiers.h`) would fit. [wire] (2026-10-23) [headers] [inferred]
 
 ### 4.4 Status codes (HTTP-like, u16 LE)
 
