@@ -158,6 +158,11 @@ Bluetooth LE GATT  service 61353090-8231-49cc-b57a-886370740041
 
 ### 4.1 General layout
 
+Size limits from `whiteboard/WhiteboardConfig.h` that match the frames: `WB_MIN_MESSAGE_LENGTH 6` (the
+fixed header: start byte, opcode, length, sequence number), `WB_MAX_MESSAGE_LENGTH 512`,
+`WB_MAX_MESSAGE_PAYLOAD_LENGTH 466`, `WB_MAX_RESOURCE_PATH_LEN 255` (the one-byte path length in a GET)
+and `WB_MAX_NUMBER_OF_PARAMETERS 8` (the parameter count in a FETCH). [headers]
+
 ```
 A5 | opcode:1 | sublen:u16 LE | msgid:u16 LE | payload ... | crc32r:u32 LE
 ```
@@ -242,6 +247,10 @@ Whiteboard `ClientId` (flags/execution context, then a local client id with the 
 
 ### 4.4 Status codes (HTTP-like, u16 LE)
 
+The codes are Whiteboard's own `whiteboard::Result` values (`whiteboard/Result.h` in the public
+Movesense headers): `HTTP_CODE_CONTINUE = 100` (more pages follow), `HTTP_CODE_OK = 200`,
+`HTTP_CODE_NOT_FOUND = 404`, `HTTP_CODE_LOCKED = 423` and the rest of the HTTP set. [headers]
+
 | Value | Bytes | Meaning |
 |---|---|---|
 | 200 | `C8 00` | OK / last page |
@@ -251,6 +260,13 @@ Whiteboard `ClientId` (flags/execution context, then a local client id with the 
 | 423 | `A7 01` | locked: a previous stream's handle is still bound |
 
 ### 4.5 Handles
+
+The handle's last two bytes look like Whiteboard's 16-bit `LocalResourceId`, numbered in blocks per
+module as in the headers' generated resource tables: every logbook path has `24` (`24 00` Entries,
+`24 0D` UnsynchronisedLogs, `24 0E` Data, `24 10` Flags, `24 12` Summary), every `/Navigation` path `31`,
+`/Plugin` `53`, `/Voice` `94`, `/Info` `2F`, `/Sync` `4C`; `A4` is shared by many app settings
+(`/Settings`, `/Weather`, `/TrainingZone`, ...). From the paths in the Suunto app's captures. [wire]
+[headers] [inferred]
 
 - **Static paths** (`/Logbook/Entries`, `/Info`, ...) resolve to `F0 xx xx` / `F1 xx xx`
   handles. [wire] Entries = `F0 24 00`, Info = `F1 2F 00`.
@@ -493,7 +509,8 @@ then the Suunto app (3.15.0) on an iPhone (Ocean, fw 2.51.28) and an iPad (Nauti
   but the u16 at +2 is **`0x2400` + the byte length from +4 to the end (14 + 24 x count)**: true on
   all 104 distinct Entries pages we have (1,060 records, 13 datasets including captures and files
   shared on deepsealabs/libdc-swift#29, Nautic, Nautic S and Ocean), so the count appears twice and
-  can be cross-checked;
+  can be cross-checked. A page holds at most 18 records: 18 + 18 x 24 = 450 bytes fits Whiteboard's
+  466-byte payload limit, a 19th record (474) wouldn't; full pages we have always hold exactly 18;
   **count** is a u16 at +6 (10, 18, 5); a u32 at +10 is always 12. The bytes at +4 (2), +8 (2)
   and +14 (4) change on every capture and hold ASCII fragments ("tem_", "es.s", "ps") and
   RAM-like addresses (`0x1002xxxx`): **struct alignment padding** copied out uncleared, not
@@ -525,6 +542,8 @@ then the Suunto app (3.15.0) on an iPhone (Ocean, fw 2.51.28) and an iPad (Nauti
 Each DATA content is one page: `[header:11][data][crc:4]`.
 - Header example: `0D 00 02 C3 01 00 C3 01 00 C3 01`; the **data length** is the u16 at
   offset 3 (`C3 01` = 451). [wire] [driver]
+- **Why 451 bytes:** header 11 + data 451 + CRC 4 = 466, Whiteboard's `WB_MAX_MESSAGE_PAYLOAD_LENGTH`
+  (`WhiteboardConfig.h`). Every full page in the 2026-10-23 captures carries exactly 451 (208 pages); the last is shorter. [headers] [wire]
 - The paging offset counts **data bytes only**. Keeping headers/CRCs, or advancing by the
   whole page, loses 15 real bytes per boundary (deepsealabs/libdc-swift#57). [driver]
 - The concatenated data is one uncompressed **SBEM0103** document (see 6.5).
@@ -555,6 +574,10 @@ offset  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 2
   is the u16 LE at frame offset 20, and the payload starts at offset 28. [driver] [wire] [max]
 - Stream chunks carry msgid `0000` and the resource's static handle `F0 24 0E`, not the
   `00 24 0E` slot the GET returned. [wire]
+- Chunk header after the handle: `02 24 SIZE(2) OFFSET(4) LENGTH(2) UNKNOWN(2) 0C 00 00 00`, SIZE =
+  `0x2400` + 12 + LENGTH, and one `00` byte follows the data in every chunk. The two unknown bytes take a
+  handful of values in runs, not a counter or timestamp (checked 2026-10-23, despite a note in
+  `WhiteboardConfig.h` that data messages may carry an optional 32-bit timestamp). [wire]
 - Concatenated payloads = one **Heatshrink** (LZSS) stream, window_sz2 7, lookahead_sz2 5. [driver] [max]
 - Decompressed = an **SBEM0103** sample stream. Example: 91,988 compressed -> 101,550 B. [wire]
 - Note: the "always-on telemetry" frames noted on 2026-09-14 (`7EA5 012D 0100 00F0 240E ...`)
