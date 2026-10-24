@@ -293,7 +293,7 @@ inside the HDLC `7E ... 7E`.
    | Payload bytes | Host Hello | Watch reply | Meaning | Evidence |
    |---|---|---|---|---|
    | 0 | `09` | `09` | minimum comm-protocol version, 9 | [headers] `WB_COMM_PROTO_MIN_VERSION` |
-   | 1 | `09` | `09` | current comm-protocol version, 9 | [headers] `WB_COMM_PROTO_CURRENT_VERSION` |
+   | 1 | `09` | `09` | comm-protocol version, 9 (the public headers' `WB_COMM_PROTO_CURRENT_VERSION` is 10, but the watch sends 9 and drops a Hello with 10 in either byte) | [headers] [wire] |
    | 2 | `20` | `04` | unknown; differs host vs watch, likely a role or device class; `04` on both watches in every reply | [unknown] |
    | 3-14 | `16 45 56 41 10 04 41 10 0C 00 00 00` | the watch's packed serial | `SuuntoSerial`, 12 packed bytes | [headers] size; [wire] content |
    | 15-17 | `04 01 02` | `04 01 02` | Whiteboard library version 4.1.2 | [headers] `WbVersion.h` |
