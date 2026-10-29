@@ -390,6 +390,9 @@ inside the HDLC `7E ... 7E`.
    - `StartAfterId` must be the id of an existing entry: 0 or an unknown id gets status **404**, no
      data. So page 1 has to be fetched without the parameter; the Suunto app does exactly that (16 of
      16 first pages in 11 captures, iOS and Android; all 13 later pages use `01 07 00 LAST`).
+   - Status 100 means exactly "another page follows": with 18 entries (one full page) page 1 is
+     status **200** and nothing more is requested; after a 19th entry page 1 is **100** and page 2
+     holds the one new entry (Nautic, 2026-10-29). [wire]
    - `StartAfterId` = the newest entry gets status **200 with count 0** and a **14-byte header**:
      `01 24 0A 24 00 00 00 00 08 3C 08 00 00 00` (SIZE `0x2400` + 10; the uint32 that's 12 on other pages is
      8, the header length minus 6; the last 4 header bytes are absent). [wire] (2026-10-29, Ocean)
@@ -409,6 +412,16 @@ inside the HDLC `7E ... 7E`.
     the `09`; they belong to this dive. Without this stop the watch keeps streaming, and the
     next GET can be answered by a leftover chunk or refused with 423. [driver] [wire]
 13. `RELEASE 00 24 0E` (`A5 0B`) -> `A5 03`, 200. [wire]
+
+**Paged `/Data` read (recovery after a lost chunk).** A chunk whose offset doesn't follow the
+previous one means a chunk was lost. DC Tester build 24 then sends UNSUBSCRIBE and reads the rest
+with `FETCH` on the same handle, parameter `01 80 00 01 06 00 OFFSET` (int32, starting at the
+lost offset), the same page form as `/Summary`: 451 data bytes per page, status 100, last page
+200. Weak-signal tests (watch in an ESD bag, 2026-10-29): Ocean, one chunk lost at 428,398, 789
+pages, result byte-identical to a full stream of the same dive; Nautic, chunk lost at 269,382, 1,803
+pages over ~6 min with replies up to 4.9 s late, all answered until the link died, the 1,082,535
+bytes read byte-identical to the start of a full stream. Paging runs ~2.5 KB/s against ~7 KB/s for
+the stream. [wire]
 
 ### 5.5 Download the dive's `/Summary`
 
@@ -455,6 +468,11 @@ inside the HDLC `7E ... 7E`.
   on both watches), payload type `05` + u32 count: up when an entry is saved (1 after a dive, 2
   after a second entry) and down to 0 when the app marks the entries synced (2026-10-18, phone +
   Ocean and iPad + Nautic, Auto download listening) [wire].
+  **BusyState stays 1 while the post-dive summary page (dive time, max and average depth) is
+  shown** on the Nautic: dismissing the page cleared it within seconds; left alone, the page
+  closed by itself and BusyState dropped **5 min 3 s** after the dive was saved (2026-10-29,
+  Auto download downloaded the dive 4 s later). The 10-20 s seen on 2026-10-18 probably reflects
+  the page being dismissed. [wire] [inferred]
 - **On Android the watch also makes requests to the phone**: GET `/Media/Notification/Action`,
   `/Media/Player/Control`, `/Media/Player/State` and `/Media/Track/Info`, answered 200 by the Suunto
   app (music control and notification actions), using the same RPC frames in the other direction.
@@ -502,6 +520,19 @@ then the Suunto app (3.15.0) on an iPhone (Ocean, fw 2.51.28) and an iPad (Nauti
   right after the app was syncing, while our list and `/Summary` GETs at the same moment were answered
   (2026-10-23, Ocean, stock DC Tester builds 22 and 23). A retry after the app is idle is answered
   (build 23 retries after ~7 s). [wire]
+- **iOS interleaves two apps' writes to the same characteristic.** Each app's frame goes out as
+  several write commands, and another app's write can land between them. 2026-10-29, Ocean: the
+  Suunto app was uploading `/Device/GNSS/ExtendedEphemerisData` (chunked PUT, status 100 per part)
+  when DC Tester's 19-byte FETCH went out between the 2nd and 3rd of the four writes of one PUT
+  frame. Neither was answered: the app's frame was cut in two; ours arrived intact but was ignored,
+  probably because the watch was mid-upload. The app abandoned the upload after 20 s without a
+  retry. [wire]
+- **After a supervision timeout, iOS reconnects a bonded watch by itself.** 2026-10-29, Nautic: the
+  link ended with HCI reason 0x08 and iOS reconnected 6-9 s later. On that link the watch acts as a
+  GATT client of the phone (service discovery, writes, phone notifications), so iOS Settings shows
+  it Connected and it doesn't advertise. A host GET sent on it without a Hello and before
+  re-enabling notifications got no reply; after a CCCD write and Hello the watch answered the Hello
+  in 0.24 s. [wire]
 - **The Suunto app retries its Hello until the link is quiet.** With our stream running, each app Hello
   ended our stream (`UNSUBSCRIBE_REPLY` 404); a driver that restarts at once was ended again by the next
   Hello ~10 s later, two or three times, and the app only began its sync ~5 s after we gave up
