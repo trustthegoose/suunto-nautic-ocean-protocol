@@ -270,6 +270,9 @@ module as in the headers' generated resource tables: every logbook path has `24`
 
 - **Static paths** (`/Logbook/Entries`, `/Info`, ...) resolve to `F0 xx xx` / `F1 xx xx`
   handles. [wire] Entries = `F0 24 00`, Info = `F1 2F 00`.
+  Across our captures and the #29 files, 47 paths answered with `F0` and 7 with `F1` (`/Info`,
+  `/Dev/Time`, `/Device/System`, `/Device/Power`, `/Device/GNSS`, `/Fusion/Location`,
+  `/Activity/ActivityMonitor`), so a static test has to accept both. [wire] (2026-10-29)
 - **Per-dive paths** (`/Logbook/byId/<id>/...`) bind the id to a slot
   `[00|10] 24 <resource>` until RELEASE. `/Data` = `00 24 0E`, `/Summary` = `00 24 12`.
   A second GET while slot `00` is still bound gets `10 24 0E`. [driver] [wire]
@@ -277,6 +280,11 @@ module as in the headers' generated resource tables: every logbook path has `24`
 - Not releasing the /Data slot made the next dive's GET stream the **previous dive's**
   bytes (fixed in deepsealabs/libdivecomputer#8, libdc-swift 1.17.1). [driver]
 - Stream notifications for /Data carry msgid `0000` and handle `F0 24 0E`, see 6.3. [wire]
+  So a notification's handle is the subscribed handle with `F0` as its first byte, not the
+  bound slot: 54,178 notifications on subscribed slots carried `F0` there. [wire] (2026-10-29)
+- **Replies echo the request's handle** for FETCH, PUT, SUBSCRIBE, UNSUBSCRIBE and RELEASE:
+  8,504 of 8,504 replies. Only the GET reply brings a new handle; `FF FF FF` came only with 404
+  (16 of 16). [wire] (2026-10-29)
 
 ---
 
