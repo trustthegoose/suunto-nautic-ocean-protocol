@@ -358,9 +358,18 @@ inside the HDLC `7E ... 7E`.
 3. `GET /System/Mode` -> on the Ocean answers handle `FF FF FF`, status **404**. libdivecomputer
    uses it only as a round-trip check. [wire]
 4. `GET /Info` -> ACK handle `F1 2F 00`, 200. `FETCH` (short) -> one DATA frame (~270 B)
-   holding NUL-separated strings: `Suunto`, `Ocean`/`Nautic`, codename (`Vaasa`/`Porvoo`; `Ylivieska` expected on a Nautic S, see Models),
+   holding NUL-separated strings: `Suunto`, `Ocean`/`Nautic`, codename (`Vaasa`/`Porvoo`; `Ylivieska` on a Nautic S, see Models),
    serial (12 hex chars), part numbers, firmware `N.N.N`, `BLE Mac Address`, `WiFi Mac Address`.
    Then `RELEASE F1 2F 00` -> `03`, 200. [wire] [driver]
+   Layout, the same on the Ocean, Nautic and Nautic S (2026-10-29, from captures incl. two Nautic S
+   shared on deepsealabs/libdc-swift#29): `02 2F SIZE(2) 00 00`, SIZE = `0x2400` + length - 4 (like the
+   Entries and stream-chunk headers), then eight uint32 **string offsets counted from byte 6** (the start
+   of the table), a uint32 that is always 1, a COUNT and a LIST offset for label/value string pairs (`SIM`
+   on the Ocean and Nautic S; `SIM` and `BID` on the Nautic), a few undecoded bytes, and a second pair list
+   (`BLE Mac Address`, `WiFi Mac Address`). The strings start at offset 62 on all three: `Suunto`, model name, codename (`Porvoo` / `Vaasa` / `Ylivieska`, confirmed on
+   a Nautic S), a one-letter field, the serial, a 35-character id, the firmware version, more, and finally
+   label/value pairs `SIM`, `BLE Mac Address`, `WiFi Mac Address`. Fields can be read in order, splitting
+   on NUL, rather than searched for. [wire]
 
 ### 5.3 List the dives: `/Logbook/Entries`
 
@@ -370,6 +379,12 @@ inside the HDLC `7E ... 7E`.
    (e.g. `01 07 00 3C F0 A7 6A`) -> DATA, status **200** on the last page.
    - Page 1 holds the **oldest** dives; the newest are on the last page. On the Ocean:
      18 entries on page 1, 5 on page 2. [wire]
+   - `StartAfterId` must be the id of an existing entry: 0 or an unknown id gets status **404**, no
+     data. So page 1 has to be fetched without the parameter; the Suunto app does exactly that (16 of
+     16 first pages in 11 captures, iOS and Android; all 13 later pages use `01 07 00 LAST`).
+   - `StartAfterId` = the newest entry gets status **200 with count 0** and a **14-byte header**:
+     `01 24 0A 24 00 00 00 00 08 3C 08 00 00 00` (SIZE `0x2400` + 10; the uint32 that's 12 on other pages is
+     8, the header length minus 6; the last 4 header bytes are absent). [wire] (2026-10-29, Ocean)
    - Decoded from the app's own schema reads, handles `F0 00 03/04/07/05/0C/0B`, in
      a PacketLogger capture of the Suunto app. [app]
 8. See section 7.1 for the record format.
