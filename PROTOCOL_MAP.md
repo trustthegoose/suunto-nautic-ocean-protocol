@@ -423,6 +423,16 @@ pages over ~6 min with replies up to 4.9 s late, all answered until the link die
 bytes read byte-identical to the start of a full stream. Paging runs ~2.5 KB/s against ~7 KB/s for
 the stream. [wire]
 
+**Resuming after a link drop.** A dive's `/Data` can be finished in a new session from where a
+dropped stream stopped. Test 2026-10-29 from the Mac (nautic-listen `--resume`), both watches:
+stream 20 s, cancel the connection with no UNSUBSCRIBE or RELEASE, reconnect, Hello, GET the same
+`/Data`. The watch answered **the same handle `00 24 0E` with status 200, not 423**, so a
+disconnect frees the dive's slot. Paged FETCH from the last contiguous offset then returned the
+rest, ending with status 200: Ocean 138,722 + 645,088 B, Nautic 162,630 + 1,286,284 B, both
+byte-identical to a full stream of the same dive. So a host can keep what it has and fetch only
+the rest after a reconnect. (The Mac ended the link itself; a real loss ends in a supervision
+timeout. Either way the session ends.) [wire]
+
 ### 5.5 Download the dive's `/Summary`
 
 14. `GET /Logbook/byId/<id>/Summary` -> ACK handle `00 24 12`, 200.
