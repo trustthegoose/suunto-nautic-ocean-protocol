@@ -478,6 +478,14 @@ timeout. Either way the session ends.) [wire]
 
 ### 5.7 What the official app does differently [app]
 
+- Reads Whiteboard's own metadata (module `00`, handles `F0 00 xx`), with uint16 parameters:
+  `/Meta/Hash` (`F0 00 0E`, a short string, read repeatedly, presumably to check a cached
+  schema); `F0 00 0B` = a data type's description by type id (a kind byte, 1 = structure; a
+  structure's entry has its name's string id and a property-list id, its size and alignment
+  fields are zero); `F0 00 0C` = a string by string id (e.g. `SystemModeStatus`); `F0 00 03`,
+  `04`, `05`, `07` = resource, operation, response and parameter descriptions by resource id
+  (reply types 0x23, 0x25, 0x26, 0x27, 6.0). One Ocean app sync read 147 types, 389 strings and
+  79 resources. The other kinds aren't decoded. [app] [wire] (2026-10-30)
 - Also calls `/Logbook/byId/<id>/Flags` and `/Logbook/UnsynchronisedLogs`, which the
   driver never does. Both read with a plain GET + short FETCH (reply type `05`, u16):
   `UnsynchronisedLogs` = 0 and `Flags` = **3** on every dive of both watches with all dives
