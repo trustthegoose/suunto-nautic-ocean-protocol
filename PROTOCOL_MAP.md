@@ -25,7 +25,10 @@ downloading its dives, and where each piece of dive data lives.
   (value types), `whiteboard/WbVersion.h` (versions), `whiteboard/Identifiers.h` and
   `WhiteboardConfig.h` (SuuntoSerial), `sbem/Sbem.hpp`. These give constants and
   structures, not the wire format: Movesense doesn't publish that, so the byte layouts here
-  remain reverse-engineered.
+  remain reverse-engineered. Since 2026-10-30 also `resources/movesense-api/mem/logbook.yaml` (the
+  logbook API), the generated `mem_logbook` and `wb-resources` `resources.h` (struct layouts,
+  type ids), `builtinTypes/` (`Optional`, `Array`, `ByteStream`) and the debug info in the
+  prebuilt `lib/GCCARM/SS2/libmovesense-core.a` (the frame header, 4.1); 6.0 is built on them.
 - **[max]** first described by Max (GitHub `urbamax`) in his reverse-engineering report,
   libdivecomputer/libdivecomputer#70 (2026-08-28), from a capture of the official app's sync.
   The other tags on the same line say how it was later confirmed.
@@ -587,11 +590,52 @@ then the Suunto app (3.15.0) on an iPhone (Ocean, fw 2.51.28) and an iPad (Nauti
 
 ## 6. Content formats
 
+### 6.0 How values are serialized [headers] [wire] (2026-10-30)
+
+A reply's content and a notification's value start with a u16 **type tag**: a built-in
+`ValueType` (below 16, e.g. `0C 00` string, `0D 00` byte stream; the value follows directly) or a
+structure's data type id (`01 24` LogEntries, `02 24` LogDataNotification, `02 2F` for /Info;
+the high byte is the module, the same as the handle's middle byte). A structure tag is followed
+by a **size word** and then the struct as laid out in memory: every member aligned to its own
+size, pointers replaced by offsets, padding not cleared. The logbook structs are public
+(`logbook.yaml`, generated `mem_logbook/resources.h`):
+
+```
+struct LogEntry            { uint32 Id; uint32 ModificationTimestamp; Optional<uint64> Size; }; // WB_ALIGN(8)
+struct LogEntries          { Array<LogEntry> elements; };                                       // WB_ALIGN(4)
+struct LogDataNotification { uint32 offset; Array<uint8> bytes; };                              // WB_ALIGN(4)
+Optional<T> = { bool hasValue; T value; }
+Array<T>    = { uint16 count; uint32 offset of the items from the start of the struct; }
+```
+
+**Size word** (u16 LE after a structure tag): bits 0-8 = the number of bytes after it (all
+~190,000 struct frames in our captures; /Data chunks carry one more byte, 6.3); bits 9-11 = log2
+of the struct's alignment; bits 12 and 13 are flags of unknown meaning. [wire]
+- Alignment 2 (4 bytes) on the logbook, /Info and settings replies (the logbook structs are
+  `WB_ALIGN(4)`); 0 on the 3-byte `/Device/System/Mode` reply (`0x2003`); on the `/Meta` replies
+  (5.7) it matches the generated `wb-resources/resources.h` for all six types: 1 on
+  ResponseMetadata and ParameterMetadata (`WB_ALIGN(2)`, `0x32xx`), 2 on Resource, Operation,
+  DataType and StringMetadata (`WB_ALIGN(4)`, `0x34xx`). [headers] [wire]
+- Bit 13 is set on everything the watch sends; bit 12 on everything the Suunto app sends (struct
+  PUT parameters, `0x14xx`) and on the watch's `/Meta` replies. [wire]
+- So the earlier reading "SIZE = `0x2400` + length" below is the alignment bits (bit 10) plus
+  bit 13.
+
 ### 6.1 `/Logbook/Entries` DATA content
 
 ```
 01 24 | BE 25 70 73 | count:u32 | 0C 00 00 00 | 45 00 00 00 | records ...
 ```
+- **Decoded (6.0):** `01 24` LogEntries tag, size word, 2 bytes padding, then the struct: COUNT
+  u16, 2 bytes padding, `0C 00 00 00` = the items' offset from COUNT, 4 bytes padding (the items
+  are 8-aligned), records. Each record is a `LogEntry`:
+  `Id(4) ModificationTimestamp(4) hasSize(1) padding(7) Size(u64)`. So `start` = Id, `end` =
+  ModificationTimestamp, `w1`'s low byte `01` = `Size.hasValue`, the rest of `w1` and all of
+  `w2` are padding, and the "always 0" last u32 is the high half of the u64 size. `Size` is
+  optional in the API; `hasValue` was 1 on all 1,060 records. With count 0 the item offset is 8
+  and the last padding is absent (the 14-byte header, 5.3). Every byte seen changing between
+  identical reads is at a padding position. The notes below are the earlier analysis.
+  [headers] [wire] (2026-10-30)
 - Header fields, compared over 16 captures (2026-10-03 to 10-07, both watches): `01 24` at +0
   and a u16 at +2 (`FE 24` Nautic, `BE 25` Ocean page 1, `86 24` Ocean page 2) looked constant,
   but the u16 at +2 is **`0x2400` + the byte length from +4 to the end (14 + 24 x count)**: true on
@@ -630,6 +674,10 @@ then the Suunto app (3.15.0) on an iPhone (Ocean, fw 2.51.28) and an iPad (Nauti
 Each DATA content is one page: `[header:11][data][crc:4]`.
 - Header example: `0D 00 02 C3 01 00 C3 01 00 C3 01`; the **data length** is the u16 at
   offset 3 (`C3 01` = 451). [wire] [driver]
+- The 11 bytes are a Whiteboard `ByteStream` (`builtinTypes/ByteStream.h`): `0D 00` tag (type
+  13), status mask `02` (STATUS_RESERIALIZATION), 24-bit length, 24-bit transmitted count, 16-bit
+  payload size. Each page is its own stream, so all three are equal (1,117 of 1,117 pages in four
+  captures). [headers] [wire] (2026-10-30)
 - **Why 451 bytes:** header 11 + data 451 + CRC 4 = 466, Whiteboard's `WB_MAX_MESSAGE_PAYLOAD_LENGTH`
   (`WhiteboardConfig.h`). Every full page in the 2026-10-23 captures carries exactly 451 (208 pages); the last is shorter. [headers] [wire]
 - The paging offset counts **data bytes only**. Keeping headers/CRCs, or advancing by the
@@ -662,10 +710,10 @@ offset  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 2
   is the u16 LE at frame offset 20, and the payload starts at offset 28. [driver] [wire] [max]
 - Stream chunks carry msgid `0000` and the resource's static handle `F0 24 0E`, not the
   `00 24 0E` slot the GET returned. [wire]
-- Chunk header after the handle: `02 24 SIZE(2) OFFSET(4) LENGTH(2) UNKNOWN(2) 0C 00 00 00`, SIZE =
-  `0x2400` + 12 + LENGTH, and one `00` byte follows the data in every chunk. The two unknown bytes take a
-  handful of values in runs, not a counter or timestamp (checked 2026-10-23, despite a note in
-  `WhiteboardConfig.h` that data messages may carry an optional 32-bit timestamp). [wire]
+- Chunk content after the handle: `02 24` LogDataNotification tag, size word (6.0), then the
+  struct: `OFFSET(4) LENGTH(2)` (= `bytes.count`) `PADDING(2) 0C 00 00 00` (the bytes' offset from
+  OFFSET) `DATA(LENGTH)`, then one `00` (6.3 below). The two padding bytes take a handful of values
+  in runs, not a counter or timestamp (checked 2026-10-23). [headers] [wire]
 - Concatenated payloads = one **Heatshrink** (LZSS) stream, window_sz2 7, lookahead_sz2 5. [driver] [max]
 - Decompressed = an **SBEM0103** sample stream. Example: 91,988 compressed -> 101,550 B. [wire]
 - Note: the "always-on telemetry" frames noted on 2026-09-14 (`7EA5 012D 0100 00F0 240E ...`)
