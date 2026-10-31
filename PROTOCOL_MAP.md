@@ -172,6 +172,13 @@ A5 | opcode:1 | sublen:u16 LE | msgid:u16 LE | payload ... | crc32r:u32 LE
   echoes its request's msgid; matching on it is how replies are told apart from other
   traffic on the link. [driver] [wire]
 - `sublen` counts the payload after msgid (excluding the CRC). [driver]
+- The header's bit layout is `whiteboard::DataMessageHeader` (6 bytes) in the debug info of the
+  SDK's prebuilt `MovesenseCoreLib/lib/GCCARM/SS2/libmovesense-core.a`: byte 0 `magic` (`A5`);
+  byte 1 `messageType` (bits 0-4, the opcode), 2 reserved bits, `routed` (bit 7); bytes 2-3
+  `messageLength` (bits 0-9, the sublen), `includesTimestamp` (bit 10), 5 reserved bits; bytes
+  4-5 `requestId` (the msgid). `includesTimestamp` is 0 on every captured frame; the library
+  has only a `protocol_v9` serializer, and the watch speaks protocol 9 (5.1). [headers] [wire]
+  (2026-10-30)
 
 ### 4.2 Opcodes
 
