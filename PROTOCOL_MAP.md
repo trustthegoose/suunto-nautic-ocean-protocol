@@ -697,7 +697,13 @@ offset  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 2
   libdivecomputer/libdivecomputer#70. [wire]
 - **End of stream:** the last chunk has payload size **0**, at an offset equal to the total
   compressed length (e.g. 1,502,475 on an Ocean dive, exactly what the driver captured), and
-  the watch sends it **twice** (byte-identical; it repeats its last chunk until told to stop).
+  the watch sends it **twice** (byte-identical; exactly two at 136 of 136 stream ends in 14 iPhone
+  captures, Nautic, Nautic S and Ocean, 2026-10-30; with the host unsubscribing on the first, the
+  second came after the UNSUBSCRIBE was sent 39 times, always before its reply, and nothing
+  followed a reply). Movesense's `logbook.yaml` promises only "multiple notifications with empty
+  array" and says to unsubscribe on the first. It also defines a read-error chunk, offset
+  `0xFFFFFFFF` with an int16 error code in the data (never seen here), and says 409 where these
+  watches answer 423. [headers] [wire]
   Checked 2026-10-14 on every captured stream of all 33 dives on two watches (50 streams,
   Nautic fw 2.55.46 and Ocean fw 2.51.28): present at the end of every stream, never earlier,
   offset chain unbroken. [wire] A driver could stop on it instead of waiting for silence, but
@@ -714,6 +720,13 @@ offset  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 2
   struct: `OFFSET(4) LENGTH(2)` (= `bytes.count`) `PADDING(2) 0C 00 00 00` (the bytes' offset from
   OFFSET) `DATA(LENGTH)`, then one `00` (6.3 below). The two padding bytes take a handful of values
   in runs, not a counter or timestamp (checked 2026-10-23). [headers] [wire]
+- **The trailing `00` isn't logbook-specific:** every notification (`A5 01`) in our captures ends
+  with exactly one `00` after its value (46 of 46 non-logbook ones: BusyState, UnsynchronisedLogs,
+  battery level, Tide/Weather sync, watch face id; e.g. battery `03 00 59 00`), and FETCH replies
+  of the same built-in types never do (433 of 433). Likely an empty **notification parameter
+  list** (count 0): `ResourceClient::onNotify(resourceId, value, parameters)`, and requests encode
+  an empty list as a `00` count (`01 80 00 00`). Not the timestamp flag, which is a header bit
+  (4.1). [headers] [wire] [inferred] (2026-10-30)
 - Concatenated payloads = one **Heatshrink** (LZSS) stream, window_sz2 7, lookahead_sz2 5. [driver] [max]
 - Decompressed = an **SBEM0103** sample stream. Example: 91,988 compressed -> 101,550 B. [wire]
 - Note: the "always-on telemetry" frames noted on 2026-09-14 (`7EA5 012D 0100 00F0 240E ...`)
