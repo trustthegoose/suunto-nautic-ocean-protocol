@@ -223,7 +223,24 @@ type 07 = uint32 (Entries StartAfterId)
 Parameter type ids are Whiteboard's `ValueType` enum: 0 none, 1 bool, 2 int8, 3 uint8,
 4 int16, 5 uint16, 6 int32, 7 uint32, 8 int64, 9 uint64, 10 float, 11 double, 12 string,
 13 byte stream, 14 hash string, 15 structure. [headers] (the header warns the values
-"match fixed data type IDs"). Seen on the wire: 1, 3, 5, 6, 7. [driver] [wire]
+"match fixed data type IDs"). Seen on the wire: 1, 3, 5, 6, 7, 8, 12, 13 and structure type
+ids (6.0). [driver] [wire]
+- **The tag is a u16 and fixes the value's length** (there is no length field): 03 -> 1 byte,
+  05 -> 2, 06/07 -> 4, 08 -> 8, 0C -> a NUL-terminated string, 0D -> a byte stream with its own
+  header (6.2), a structure -> its size word (6.0). True on all ~14,000 parameters in our
+  captures (Suunto app and DC Tester); requests with 2-3 parameters mix types, e.g.
+  `02 | 03 00 0C | 06 00 00 00 00 00` (a uint8, then an int32). [wire] (2026-10-30)
+- The types are the declared ones: Movesense's public logbook API
+  (`MovesenseCoreLib/resources/movesense-api/mem/logbook.yaml`) gives `StartAfterId` as `uint32`
+  and the `/Data` `offset` as `int32` (its `LogId` path parameter is `int32` too). [headers]
+- **The watch checks the tag** (2026-10-30, both watches, read-only, on /Summary): the same
+  offset sent as 07, 05, 04, 03, 02, 08, 09 or 0C gets **400 Bad Request**; only 06 works. [wire]
+- **A /Summary FETCH without the parameter continues a per-dive read cursor:** after the page at
+  offset 0 it returns the page at 451. The cursor survives RELEASE and a disconnect: a new
+  session's first bare FETCH returned the page after the previous session's last read, on both
+  watches. Only after a read that had reached the last page did it return page 1 (probably reset
+  at the end; not tested directly). Always send the offset; the Suunto app does on every
+  /Summary and /Data page (8,917 of 8,917 in our captures). [wire] (2026-10-30)
 Sending the ranged form to `/Logbook/Entries` page 1 gets **400 Bad Request**. [driver]
 
 **DATA** (`05`):
