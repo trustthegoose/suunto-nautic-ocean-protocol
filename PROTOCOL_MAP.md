@@ -843,7 +843,10 @@ page header, `0D 00 02 08 00 00 08 ...`, like the padding in 6.1), while the clo
     Confirmed with the CCR dive above; reported as deepsealabs/libdc-swift#94.
 - GPS: int32 degrees x 1e7 (schema: PI*x/(1e7*180) radians); GPSAltitude uint16, x/5 - 1000 m.
 - `local64` times (e.g. DiveFooter `DiveLocation.Start/Stop.DateTime`): **local wall-clock milliseconds**
-  in the low 7 bytes, flag byte `0xF0` on top. The GPS start/stop "DateTime" equals the dive's start
+  in the low 7 bytes; the top byte is the UTC offset in quarter hours, signed (`0xF0` = -16 = -4:00;
+  `0x08` = +2:00, `0x0C` = +3:00 seen on an Ocean across a DST change). Wall clock minus offset equals
+  the logbook id to the second. The dive stream opens with one too, record `0x01`
+  (`SBEM0103 01 08 <local64>`). The GPS start/stop "DateTime" equals the dive's start
   and end time, not the moment the fix was taken, so a stale (reused) fix can't be detected from it.
   [wire] [cloud]
 
