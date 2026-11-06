@@ -621,12 +621,41 @@ then the Suunto app (3.15.0) on an iPhone (Ocean, fw 2.51.28) and an iPad (Nauti
 - **No second host:** while connected to one phone the watch doesn't advertise, so another device can't
   find it (a 60 s Mac scan and a 30 s connect attempt with the Ocean awake on the wrist, 2026-10-23).
   Several apps on one host share the link; two hosts can't. [wire]
+- **GETs are dropped while another client's `/Data` stream is sending, but a PUT can be answered.** During
+  our stream the Suunto app's GET `/Info` went unanswered three times in a row, 3 s apart, while in a later
+  run its PUT was answered `07` 200 in the middle of our stream (2026-11-05, Ocean). [wire]
+- **The Suunto app's retry cycle when starved** (Ocean, 2026-11-05): Hello, `/System/Mode`,
+  `/Device/System/Mode`, `/Meta/Hash`, two FETCHes, then GET `/Info` x3 (3 s apart, unanswered while our
+  stream ran), then a new Hello: about every 11 s, 14 Hellos in 2.5 minutes. A Hello that lands on a
+  running stream fails silently for the app, which retries about 10.6 s later. Its Hello ended our stream
+  each time, so a driver that reconnects in 4 s and streams again keeps both apps from finishing (the app
+  shows "not connected"). When the other client went away, the app's `/Info` was answered and its sync
+  finished. A driver that steps aside on the first reply to another client, and stays off until the link
+  is quiet, lets the app's next attempt go straight through. [wire]
+- **How the one `/Data` stream behaves with a second dive** (direct test, Nautic, 2026-11-05, one client
+  sending the requests in a fixed order, dives of different sizes): [wire]
+  - GET of dive Y while X streams: no reply; X runs on to its end marker, no gap.
+  - GET X, GET Y, SUBSCRIBE on X's handle: Y gets slot `10 24 0E`; X streams, complete. With nothing left
+    over, SUBSCRIBE on slot `10` streams Y normally.
+  - Hello while X streams, then GET and SUBSCRIBE Y: X stops; Y's GET gets slot `00` back; Y comes through
+    from offset 0 on the same stream handle. A client still reading sees the offset jump to 0. This is the
+    only way we've seen one dive's data follow another's. The old handle's UNSUBSCRIBE then gets 403.
+  - X streamed to its end with no UNSUBSCRIBE: the next dive's GET gets slot `10`, SUBSCRIBE gets 423.
+- **A stream left running holds the stream after it ends.** A client that stopped reading without
+  UNSUBSCRIBE: the watch streamed the rest of the dive to nobody (about 111 s, to its end marker), then
+  refused every SUBSCRIBE with **423** until a Hello cleared it (68 refusals in 50 s). Without a Hello it
+  clears only like this: free slot `00` and any other slot, GET again (slot `00`), SUBSCRIBE (423),
+  UNSUBSCRIBE (200), SUBSCRIBE (200). UNSUBSCRIBE from slot `10`, or on the old binding, answers 200 but
+  SUBSCRIBE still gets 423. (2026-11-05, Nautic) [wire]
+- **A Hello also ends the other client's per-dive handles:** after the Suunto app's Hello, our paged FETCH
+  on a `/Data` handle bound before it got 404, and a Hello that tore the chunk it landed in showed up only
+  as a 404 on our UNSUBSCRIBE (2026-11-05, both watches). [wire]
 - **HDLC sync when joining mid-stream.** Stream frames come back to back (`7E ... 7E 7E ... 7E`).
   A reader that starts inside a frame and treats a closing flag as an opening one returns an
   empty frame at every flag and never resynchronises while the stream lasts, so it sees nothing,
   including replies meant for it. Treat two flags in a row as the start of the next frame.
   [driver]
-- Driver changes and test logs: deepsealabs/libdivecomputer#16, deepsealabs/libdc-swift#78.
+- Driver changes and test logs: deepsealabs/libdivecomputer#16, deepsealabs/libdivecomputer#20, deepsealabs/libdc-swift#78.
 
 ---
 
