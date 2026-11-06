@@ -536,6 +536,34 @@ timeout. Either way the session ends.) [wire]
   **other offset** (-240, EDT), u32 0, u32 3, four u32 (32, 44, 61, 62, meaning unknown), **three u32 UTC
   transition times** (the last one, 2026-11-01 06:00 UTC, and the next two, 2027-03-14 07:00 and 2027-11-07
   06:00 UTC), then the IANA zone name, NUL-terminated (`America/New_York`). Answered `07` 200. [app] [wire]
+- **`sysevt.sbm`: the watch keeps a system event log, and the app collects it at every sync.** FETCH on
+  `/Analytics/Data` with a file-name parameter (`sysevt.sbm`) -> **201 Created**: the watch writes the log
+  to a file **and starts a new log**; the app reads the file through `/Dev/FileSystem/Stream` in 451-byte
+  pages, then deletes it (`/Dev/FileSystem/FileDelete`). Same pattern as the sleep timeline (`mdsSlp.sbm`);
+  those two are the only export names in our captures. 25 exports found, on both watches, iOS and Android,
+  back to 2026-08-31; one covered 4 days and 499 events. Something else also starts a new log: two logs
+  began mid-stream with no export before them. Exports hold some user settings (e.g. a birth year), so
+  treat them as personal data. First spotted by urbamax on deepsealabs/libdc-swift#29 (2026-09-01,
+  issuecomment-5499351296), as an export mislabelled `/Logbook/Entries`. [app] [wire]
+  - Container `SBEM0102`; header strings include `suunto-analytics-<serial>`, the firmware version and the
+    codename. Each record: `07 04` u32 counter, `08 0d "system_event"`, `09 08` u64 **UTC microseconds**
+    (whole seconds in practice), `0a` message, `0b` category (`BLE`, `ANALYTICS`, `WBAPI`, `WBMAIN`,
+    `UI_FRAMEWORK`, `FWUPDATE`), `0c` level (`TRC`, `EVT`, `WRN`, `ERR`). [wire]
+  - Readings matched to host logs and captures (one night of tests on both watches; tentative):
+    `DEV M connected` / `disconnected` = BLE link up/down. `SVC M/F000 enabled` = a client enabling
+    notifications (one per client and per Suunto Hello). `Sync start` = roughly one per SUBSCRIBE or
+    UNSUBSCRIBE. `Weather sync TO`, hourly = no app answered the watch's weather sync. [inferred]
+  - `WBAPI WRN eID-<hex>(<n>): <status or path>` records a Whiteboard request that failed: statuses 404,
+    403, 429 and 502, and some name the path (`/Settings/General/BacklightDailyForced`,
+    `/Dive/DesaturationTimes.noFlyTime` 404). The hex and the number look like a code address and location,
+    not a resource. `eID-ffff(621): 502` appears when a request arrives on a link with no session (a host's
+    session check before its Hello, every time; never when a client just says Hello). `eID-ffff(2101): 502`
+    appears when a Hello ends a running `/Data` stream (every time, both watches). A GET dropped mid-stream
+    and a SUBSCRIBE refused with 423 log nothing. [wire] [inferred]
+  - Also seen: battery charge, GPS, heart-rate sensor sessions, activity summaries, Bluetooth sensor
+    pairing (`BLE Sensor Link`, `connect to all paired sensor`), `BLE Link Restore`, `sendDisconnect 61440`,
+    `pool id:3 full! (Max 4/4)` (also during a plain download with no other client), `BLE-COMM SHWM <n>`,
+    Bluetooth state changes (`OFF->START->ON->TIMER->OFF`). [wire]
 - Re-lists /Logbook/Entries twice per sync and fetches /Summary several times per dive.
 - Reads the per-dive schema **`/Logbook/byId/<id>/Descriptors`** before /Summary and /Data
   when a dive is opened (path seen in a PacketLogger capture of the Suunto app; latishab decoded it on
