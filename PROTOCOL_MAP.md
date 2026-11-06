@@ -530,6 +530,12 @@ timeout. Either way the session ends.) [wire]
   captures of an app sync; if one was posted, change the Suunto account password, which should
   end the old session. The key is not the password, and no email or password appears in the
   captures. [wire] [inferred]
+- **The app sets the watch's clock and time zone on sync** (both watches, 2026-11-05): `/Dev/Time` PUT,
+  value type `08` (u64) = **UTC seconds** (the phone's clock). `/Settings/General/TimeZoneInfo` PUT, 71
+  bytes: a header, then u32 UTC seconds (now), int16 **current offset in minutes** (-300 in EST), int16 the
+  **other offset** (-240, EDT), u32 0, u32 3, four u32 (32, 44, 61, 62, meaning unknown), **three u32 UTC
+  transition times** (the last one, 2026-11-01 06:00 UTC, and the next two, 2027-03-14 07:00 and 2027-11-07
+  06:00 UTC), then the IANA zone name, NUL-terminated (`America/New_York`). Answered `07` 200. [app] [wire]
 - Re-lists /Logbook/Entries twice per sync and fetches /Summary several times per dive.
 - Reads the per-dive schema **`/Logbook/byId/<id>/Descriptors`** before /Summary and /Data
   when a dive is opened (path seen in a PacketLogger capture of the Suunto app; latishab decoded it on
@@ -848,7 +854,12 @@ page header, `0D 00 02 08 00 00 08 ...`, like the padding in 6.1), while the clo
   the logbook id to the second. The dive stream opens with one too, record `0x01`
   (`SBEM0103 01 08 <local64>`). The GPS start/stop "DateTime" equals the dive's start
   and end time, not the moment the fix was taken, so a stale (reused) fix can't be detected from it.
-  [wire] [cloud]
+  The offset comes from the phone: on sync the Suunto app PUTs `/Settings/General/TimeZoneInfo` (5.7),
+  which names the zone and carries the current and the other offset and the DST transition times.
+  Prediction to check: our dives before 2026-11-01 carry `0xF0` (-4:00, EDT), the next ones `0xEC` (-5:00,
+  EST). Open: whether the watch applies a transition by itself or only at the next app sync; TimeZoneInfo
+  carries the next transitions, which suggests the former, but no entry was made on either watch between
+  2026-11-01 and the 2026-11-05 syncs. [wire] [cloud] [inferred]
 
 **Record layout.** The /Summary is six SBEM records, in the same order as the six Summary
 samples of the cloud JSON (the cloud lists keys alphabetically inside each sample, so key
