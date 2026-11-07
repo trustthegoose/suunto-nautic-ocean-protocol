@@ -10,7 +10,8 @@ downloading its dives, and where each piece of dive data lives.
   (2026-10-04, Ocean, firmware 2.51.28, libdc-swift 1.17.1 with `--debug`).
 - **[driver]** stated in the libdivecomputer driver as of deepsealabs/libdivecomputer
   `9cbc430c` (libdc-swift 1.17.1): `src/suunto_nautic.c`, `src/suunto_nautic.h`,
-  `src/suunto_nautic_parser.c`. Its comments record what was confirmed on hardware.
+  `src/suunto_nautic_parser.c`. This is a claim, not a check: alone it means nobody here has
+  verified it. Lines that were checked also carry [schema], [wire] or [cloud].
 - **[app]** seen in PacketLogger captures of the official Suunto app
   (Nautic 2026-09-14, Ocean 2026-10-03).
 - **[cloud]** seen in Suunto cloud `workouts/<key>/sml` JSON.
@@ -32,6 +33,7 @@ downloading its dives, and where each piece of dive data lives.
 - **[max]** first described by Max (GitHub `urbamax`) in his reverse-engineering report,
   libdivecomputer/libdivecomputer#70 (2026-08-28), from a capture of the official app's sync.
   The other tags on the same line say how it was later confirmed.
+- **[jef]** stated by Jef Driesen, libdivecomputer maintainer, on libdivecomputer#73.
 - **[unknown]** not established; treat as open.
 
 Related: deepsealabs/libdc-swift#29 and #56-#61, libdivecomputer/libdivecomputer#73.
@@ -971,8 +973,8 @@ both records end in the 45-byte gas-record array (DiveHeader from +185, DiveFoot
 continues on the Nautic: 151 = 3 x 45 + 16, i.e. room for **8 gas slots plus 16 bytes**.
 The schema confirms it: 8 gas slots on the Nautic, and the 16 trailing bytes are the CCR
 Setpoint block. [wire-derived] [schema] Record ids
-differ by one between models (likely assigned by the watch's format descriptors), so find
-records by position, not by a fixed id. The table below gives absolute offsets from the
+differ by one between models (assigned by the watch's format descriptors, 6.5), so find
+records by position or from the schema, not by a fixed id. The table below gives absolute offsets from the
 SBEM signature for the two files checked; the record-relative offset is in the Type column
 where known (e.g. DiveFooter +8). Multi-byte values are little-endian. [cloud-matched]
 
@@ -1172,6 +1174,10 @@ Top level `{"Summary": {"Samples": [...]}, "Data": {"Samples": [...]}}`; every s
 
 ## 9. Open questions
 
+- Whether any firmware sends an `FF` extended SBEM id (6.5), what ActivityType 100 is (section 7),
+  and whether the schema's group ids and layouts change with firmware. We hold two schemas, none
+  from a Nautic S. Non-dive entries and `/Descriptors` across dives and firmware are still to read.
+- What gfLeadingTissue means (section 7).
 - The constant Entries header fields (the u32 = 12 at +10) and `w1`'s low byte (always 1, on
   1,060 records from 13 datasets); the varying bytes look like struct padding (6.1). The u16 at +2
   is a length (6.1).
