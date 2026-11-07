@@ -866,8 +866,8 @@ means anything. [driver]
 enum values. Fetched for one dive on both watches (Nautic 43,505 B, Ocean 43,140 B; a 64-page fetch cap
 truncates it at 28,864 B) and decoded with `tools/descriptors_decode.py`; the full field lists
 with byte offsets are in `schema/summary_schema_{nautic,ocean}.txt`. Every cloud-matched
-offset below agrees with it, and its record lengths equal the real ones (DiveHeader 410/561,
-DiveFooter 507/658; the Nautic S has the Ocean's lengths except Windows 243 and Header 374, see
+offset below agrees with it, and its record lengths equal the real ones (DiveHeader 561 Nautic, 410 Ocean;
+DiveFooter 658 Nautic, 507 Ocean; the Nautic S has the Ocean's lengths except Windows 243 and Header 374, see
 Models).
 
 **Checked on every archived dive (2026-10-18):** all 39 raw `/Summary` records (14 Nautic, 25 Ocean,
@@ -1072,8 +1072,8 @@ descent time/distance, vertical speed, header duration, pause duration, average 
 | Time to surface | /Data `16` | int64 at +22 (s); drivers read the low u16, which held every value in 12,632 records | [schema] [wire] |
 | NDL | /Data `16` | int64 at +30 (s); drivers read the low int16, which held every value in 12,632 records | [schema] [wire] |
 | Ceiling | /Data `16` | float32 at +38 (m) | [driver] [schema] |
-| GF99 / surface GF / leading tissue | /Data `16` | int32, int32, int8: at +186 / +190 / +194 in the 195-byte layout, +132 / +136 / +140 in the 141-byte layout. Leading tissue reads 0-5, so it isn't a GF percentage on this evidence; meaning not established. Not +78, the driver's offset: that's a cylinder GasNumber (2 in all 5,038 records). The driver reads only the 195-byte layout | [schema] [wire] |
-| `16` length | 195 B: 8 cylinder slots. 141 B: 5 slots, then the GF fields. The Nautic schema we hold is 195 B and the Ocean schema 141 B; the driver reports 141 B on the Nautic S | | [schema] [driver] |
+| GF99 / surface GF / leading tissue | /Data `16` | int32, int32, int8: at +186 / +190 / +194 in the 195-byte layout, +132 / +136 / +140 in the 141-byte layout. Leading tissue reads 0-5, so it isn't a GF percentage on this evidence; meaning not established. Not +78, the driver's offset: that's a cylinder GasNumber (2 in all 5,038 records). The driver reads only the 195-byte layout. All three, with depth, ceiling, time to surface and NDL, match the cloud on every record of 4 dives (1,956 records, 2 Nautic, 2 Ocean) | [schema] [wire] [cloud] |
+| `16` length | 195 B: 8 cylinder slots. 141 B: 5 slots, then the GF fields. It follows the watch model: 195 B on all 32 dives with the Nautic's 561-byte DiveHeader, 141 B on all 38 with the Ocean's 410-byte one. The driver reports 141 B on the Nautic S (not checked here) | | [schema] [wire] [driver] |
 | Surface pressure | /Data `17` | 3 float32 at +2/+6/+10 (current, max, min), Pa | [driver] [schema] |
 | Activity / dive mode | /Data `08` | `[dt][ActivityType u8][CustomModeId utf8, NUL-terminated]`; the text was the same number on every entry here, so 6 B for `51` and 7 B for `100`. 51 scuba, 61 freedive, 62 mermaiding [driver]. 100 is on non-dive entries with no depth samples; meaning unknown | [schema] [wire] |
 | Heart rate | /Data `0F` (Ocean only) | u8 bpm | [driver] [schema] |
