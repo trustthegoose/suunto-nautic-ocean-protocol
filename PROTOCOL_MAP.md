@@ -812,14 +812,48 @@ means anything. [driver]
 ### 6.5 SBEM0103 container (both /Data and /Summary)
 
 - Starts with the ASCII signature `SBEM0103`. [max]
-- Then TLV records: `[id:1][length:1][value]`; length `FF` = a 4-byte LE length follows.
-  Unknown ids are skipped. [driver] [max] (TLV layout and the `FF` extended length)
+- Then TLV records, walked strictly from offset 8:
+
+  ```
+  ID  = [id:1], or FF [id:u16 LE]
+  LEN = [length:1], or FF [length:u32 LE]
+  REC = ID LEN [value:length]
+  ```
+
+  The header is 2, 4, 6 or 8 bytes. The next record is always at header + length, so no search
+  is needed, and unknown ids are skipped by their length. The `FF` length is [driver] [max]. The
+  `FF` id is from Jef Driesen (libdivecomputer#73, 2026-11-06) and matches his EON Steel parser
+  (`traverse_entry`); it hasn't appeared in our data (see below). [jef]
+  **Checked (2026-11-06):** the walk ends exactly at the end of every complete section: all 162
+  /Summary sections and 129 of 136 profiles. The other 7, and 10 profile-only files, are
+  incomplete: 12 stop inside their last record, 5 from early builds lose sync mid-file (cause
+  not confirmed). [wire]
 - In a sample stream every record except the timeline base (`01`) starts with a signed
   **int16 LE millisecond delta** from the previous record. [driver]
-- Heatshrink artifacts can fake a header; fixed-length ids are validated
-  (`08`=6, `0B`=20, `0E`=6, `14`=7, `16`=195, `17`=14) and the walk resyncs byte by byte. [driver]
-- The ids are not universal across firmware: some are assigned per watch from a descriptor
-  schema (see the IMU note below). [driver]
+- A bad header means damaged data, so report an error instead of searching for the next record.
+  Earlier drivers checked ids against a table of fixed lengths and resynced byte by byte, and
+  this map repeated their explanation that Heatshrink artifacts fake headers. That doesn't hold:
+  complete files have none. The earliest account (urbamax's parsing guide, Sep 2026) blames gaps
+  in the compressed stream from a wrong FETCH offset step. [max] [wire] The table also rejected
+  real records: `08` is 7 bytes on sport 100 entries, so the search lost its place on those 18
+  non-dive entries. The real parser gives identical output with a strict walk on the 111 dives
+  in the same set (all sport 51) and differs only on those 18. [wire]
+- Lengths vary for some ids, so don't require one exact size: `08` 6 or 7 (it holds text), `11`
+  3 to 57 (an array), `16` 141 or 195, `23` 16 or 24 (section 7). Read optional fields only if
+  the record is long enough. [schema] [wire]
+- A driver's dive buffer can hold two documents, the profile then the /Summary, each with its
+  own signature. Walk them separately: `SBEM0103` read as a record would misalign the walk.
+  [driver] [wire]
+- The ids are not universal across firmware: they are assigned per watch from a descriptor
+  schema (see the IMU note below). [driver] [schema]
+- `/Descriptors` is itself SBEM0103: records with id 0, each a u16 type id then text, like the
+  EON Steel's inline descriptors. It declares `<GRP>` records (ids 1 to 40), `<PTH>` fields and
+  `<DELTAREF>` deltas, with ids up to 408 on the Ocean and 405 on the Nautic. On the one dive
+  checked, all 25 record ids are declared groups; a field id is never sent as its own record.
+  That's why the `FF` id form has no reason to appear here. [schema] [wire]
+- A group's member formats give its exact length: `d0` 0 bytes, `enum`, `dint8` and `duint8` 1,
+  and so on. On one Ocean and one Nautic dive this predicts every record without text (22 of 25,
+  21 of 24); the rest hold `utf8` members and are longer by the string. [schema] [wire]
 
 ---
 
