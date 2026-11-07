@@ -94,7 +94,8 @@ Bluetooth LE GATT  service 61353090-8231-49cc-b57a-886370740041
 | Advertising | the watch advertises the `61353090-...` service UUID, so a scan can filter on it | [wire] |
 | Advertised name | `Suunto Ocean <serial>` / `Suunto Nautic <serial>` (name contains the serial) | [wire] |
 | MTU | never extended; notifications arrive as 60-byte pieces of an HDLC frame; host writes are split with an 8 ms gap | [wire] [driver] |
-| Notify enable | the CCCD write can raise an iOS pairing dialog on first connect (allow 20 s) | [driver] |
+| Notify enable | the CCCD write is refused with Insufficient Encryption until the host has paired, so the first connect on iOS raises a pairing dialog (allow 20 s) | [wire] [driver] |
+| Pairing | the watch sends SMP Security Request `0x0D` (bonding, MITM, Secure Connections). Pairing without MITM protection is refused with reason 3 (Authentication Requirements). With a KeyboardDisplay host the watch shows a 6-digit passkey and the host types it; the code changes each time. A host that comes back under a different identity address gets PIN or Key Missing (`0x06`) when it starts encryption. Tested from a non-Apple host on the Nautic 2.55.46 and Ocean 2.51.28, 2026-11-06 | [wire] |
 | iOS peripheral UUID | can rotate between sessions (re-scan rather than reuse) | [driver] |
 
 **Preconditions for a connection** (all observed):
