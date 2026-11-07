@@ -259,8 +259,9 @@ ids (6.0). [driver] [wire]
 - **A /Summary FETCH without the parameter continues a per-dive read cursor:** after the page at
   offset 0 it returns the page at 451. The cursor survives RELEASE and a disconnect: a new
   session's first bare FETCH returned the page after the previous session's last read, on both
-  watches. Only after a read that had reached the last page did it return page 1 (probably reset
-  at the end; not tested directly). Always send the offset; the Suunto app does on every
+  watches. Only after a read that had reached the last page did it return page 1 (a full read resets
+  it: tested directly on one Nautic dive, 2026-11-06, where a bare FETCH continued mid-file across
+  sessions, and returned page 1 after a complete read with explicit offsets) [wire]. Always send the offset; the Suunto app does on every
   /Summary and /Data page (8,917 of 8,917 in our captures). [wire] (2026-10-30)
 Sending the ranged form to `/Logbook/Entries` page 1 gets **400 Bad Request**. [driver]
 
@@ -1091,7 +1092,7 @@ descent time/distance, vertical speed, header duration, pause duration, average 
 | GF99 / surface GF / leading tissue | /Data `16` | int32, int32, int8: at +186 / +190 / +194 in the 195-byte layout, +132 / +136 / +140 in the 141-byte layout. Leading tissue reads 0-5, so it isn't a GF percentage on this evidence; meaning not established. Not +78, the driver's offset: that's a cylinder GasNumber (2 in all 5,038 records). The driver reads only the 195-byte layout. All three, with depth, ceiling, time to surface and NDL, match the cloud on every record of 4 dives (1,956 records, 2 Nautic, 2 Ocean) | [schema] [wire] [cloud] |
 | `16` length | 195 B: 8 cylinder slots. 141 B: 5 slots, then the GF fields. It follows the watch model: 195 B on all 32 dives with the Nautic's 561-byte DiveHeader, 141 B on all 38 with the Ocean's 410-byte one. The driver reports 141 B on the Nautic S (not checked here) | | [schema] [wire] [driver] |
 | Surface pressure | /Data `17` | 3 float32 at +2/+6/+10 (current, max, min), Pa | [driver] [schema] |
-| Activity / dive mode | /Data `08` | `[dt][ActivityType u8][CustomModeId utf8, NUL-terminated]`; the text was the same number on every entry here, so 6 B for `51` and 7 B for `100`. 51 scuba, 61 freedive, 62 mermaiding [driver]. 100 is on non-dive entries with no depth samples; meaning unknown | [schema] [wire] |
+| Activity / dive mode | /Data `08` | `[dt][ActivityType u8][CustomModeId utf8, NUL-terminated]`; the text was the same number on every entry here, so 6 B for `51` and 7 B for `100`. 51 scuba, 61 freedive, 62 mermaiding [driver]. 100 is on all 18 non-dive entries on the Ocean, with no depth samples; meaning unknown. All 44 entries on both watches are 51 or 100, and no extended id appears | [schema] [wire] |
 | Heart rate | /Data `0F` (Ocean only) | u8 bpm | [driver] [schema] |
 | R-R intervals | /Data `10` u16; `11` array of int8 deltas, so its length varies | not read by the driver | [schema] |
 | GPS fix | /Data `0B` | 20 B: UTC local64 +2, Latitude +10 and Longitude +14 int32 (1e-7 deg), GPSAltitude u16 +18 (65535 = none) | [driver] [schema] |
@@ -1191,8 +1192,11 @@ Top level `{"Summary": {"Samples": [...]}, "Data": {"Samples": [...]}}`; every s
 ## 9. Open questions
 
 - Whether any firmware sends an `FF` extended SBEM id (6.5), what ActivityType 100 is (section 7),
-  and whether the schema's group ids and layouts change with firmware. We hold two schemas, none
-  from a Nautic S. Non-dive entries and `/Descriptors` across dives and firmware are still to read.
+  and whether the schema's group ids and layouts change with firmware. `/Descriptors` was
+  byte-identical across every entry read on a watch (2026-11-06: 4 on the Ocean, dives and
+  non-dive, 4 on the Nautic, Sep to Oct), but both watches stayed on one firmware for those
+  reads, and the watch may serve its current schema rather than one stored per dive. We hold
+  none from a Nautic S.
 - What gfLeadingTissue means (section 7).
 - The constant Entries header fields (the u32 = 12 at +10) and `w1`'s low byte (always 1, on
   1,060 records from 13 datasets); the varying bytes look like struct padding (6.1). The u16 at +2
