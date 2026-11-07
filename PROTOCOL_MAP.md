@@ -93,10 +93,25 @@ Bluetooth LE GATT  service 61353090-8231-49cc-b57a-886370740041
 | Other services | Battery `180f` (`2a19` battery level, read + notify); generic `1800`/`1801` | [wire] [app] |
 | Advertising | the watch advertises the `61353090-...` service UUID, so a scan can filter on it | [wire] |
 | Advertised name | `Suunto Ocean <serial>` / `Suunto Nautic <serial>` (name contains the serial) | [wire] |
-| MTU | never extended; notifications arrive as 60-byte pieces of an HDLC frame; host writes are split with an 8 ms gap | [wire] [driver] |
+| MTU | the watch answers ATT MTU **127** (to 527 from iOS, 517 from a non-Apple host); data length 131 on that host. Notifications still arrive as pieces of at most 60 bytes of an HDLC frame, on Apple and non-Apple hosts alike; host writes are split with an 8 ms gap | [wire] [driver] |
+| Connection interval | the watch asks for 7.5-20 ms by L2CAP request, 3-5 s after a `/Data` SUBSCRIBE. iOS settles on 30 ms; an Android Suunto app capture ran at 13.75 ms. A host can refuse the request: the stream carries on at the host's interval | [wire] |
 | Notify enable | the CCCD write is refused with Insufficient Encryption until the host has paired, so the first connect on iOS raises a pairing dialog (allow 20 s) | [wire] [driver] |
 | Pairing | the watch sends SMP Security Request `0x0D` (bonding, MITM, Secure Connections). Pairing without MITM protection is refused with reason 3 (Authentication Requirements). With a KeyboardDisplay host the watch shows a 6-digit passkey and the host types it; the code changes each time. A host that comes back under a different identity address gets PIN or Key Missing (`0x06`) when it starts encryption. Tested from a non-Apple host on the Nautic 2.55.46 and Ocean 2.51.28, 2026-11-06 | [wire] |
 | iOS peripheral UUID | can rotate between sessions (re-scan rather than reuse) | [driver] |
+
+**Stream rate against connection interval** (2026-11-06, one full `/Data` stream per cell; a non-Apple host that sets the interval and refuses the watch's request; watch still, 8 in from the antenna, RSSI about -45 dBm; Nautic 2.55.46, dive of 1,448,914 B; Ocean 2.51.28, dive of 783,810 B). [wire]
+
+| Interval | Nautic | Chunks/event | Ocean | Chunks/event |
+|---|---|---|---|---|
+| 45 ms | 5.69 KB/s | 0.92 | 5.04 KB/s | 0.82 |
+| 30 ms | 8.65 KB/s | 0.93 | 7.90 KB/s | 0.85 |
+| 15 ms | 17.21 KB/s | 0.93 | 15.61 KB/s | 0.84 |
+| 13.75 ms | 18.78 KB/s | 0.93 | 17.14 KB/s | 0.85 |
+| 11.25 ms | 21.11 KB/s | 0.85 | 20.34 KB/s | 0.82 |
+| 10 ms | 22.45 KB/s | 0.81 | 22.03 KB/s | 0.79 |
+| 7.5 ms | 24.47 KB/s | 0.66 | 22.76 KB/s | 0.61 |
+
+KB = 1000 B; a chunk is 278 bytes of data. All 14 streams complete with no gaps. Down to 13.75 ms the rate follows the connection events, a little under one chunk per event. Below that it flattens at about 80-88 chunks a second; whether the watch or the test controller sets that is unknown. The link matters: an earlier sweep with a worse setup gave the Ocean 6.23 KB/s at 30 ms, and in one sweep with the Ocean being carried it left out whole chunks (1 at 30 ms, 4 at 45 ms) that never reached the host, the rest of the stream intact. Not seen with the watch still; not tested on purpose.
 
 **Preconditions for a connection** (all observed):
 
