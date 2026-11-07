@@ -1061,35 +1061,36 @@ descent time/distance, vertical speed, header duration, pause duration, average 
 | Expected download size | Entries record `size` | u32 = /Data compressed + /Summary bytes | [driver] [wire] |
 | Absolute dive start (clock) | /Data GPS record `0B` | UTC ms; start = gps_utc - gps_rel_time | [driver] |
 | No-GPS dive start | only the LogId (dive id) | fallback | [driver] |
-| Depth | /Data `16` (extended status), every ~10 s | float32 at +2 (m) | [driver] |
-| Water temperature | /Data `12` (1 Hz profile) | u16 at +16, centi-kelvin (value/100 - 273.15) | [driver] [max] |
+| Depth | /Data `16` (extended status), every ~10 s | float32 at +2 (m) | [driver] [schema] |
+| Water temperature | /Data `12` (1 Hz profile) | u16 at +16, centi-kelvin (value/100 - 273.15) | [driver] [max] [schema] |
 | **Absolute pressure, ~1 Hz** | /Data `12` | u32 at +6, Pa (`FFFFFFFF` = none). depth = (P - surface pressure from `17`) / (rho x 9.81), rho from the water type (1000 fresh / 1020 EN13319 / 1030 salt), matching the `16` depths to ~1 cm. **Not decoded by the parser.** The Suunto app's max depth is the peak of these (25.00/16.21/25.13/16.32 m vs the 10 s samples' 24.72/16.00/24.92/16.07 m on four Sep 14 dives) | [wire-derived 2026-10-04] [max] |
-| Cylinder pressures | /Data `16` (extended status) | 18-byte slots from +42: `[idx][?][Pressure u32 Pa][Pressure2 u32 Pa][GasTime u32 s]...`; tank 0 Pressure at +44 | [driver] |
-| Second transmitter (sidemount) | /Data `16` slot `Pressure2` (+6 in the slot) | Pa; real only if non-zero twice | [driver] |
-| Gas time remaining | /Data `16` slot +10 | u32 s; `FFFFFFFF` = not computed | [driver] |
-| Time to surface | /Data `16` | u16 at +22 (s) | [driver] |
-| NDL | /Data `16` | int16 at +30 (s) | [driver] |
-| Ceiling | /Data `16` | float32 at +38 (m) | [driver] |
-| GF99 / surface GF / leading tissue | /Data `16` | int16 at +186 / +190 / +78 (%) | [driver] |
-| `16` length | 195 B (Ocean/Nautic), 141 B (Nautic S, some Ocean firmware: slots 0-4 only) | | [driver] |
-| Surface pressure | /Data `17` | 3 float32 at +2/+6/+10 (current, max, min), Pa | [driver] |
-| Activity / dive mode | /Data `08` | `[dt][sportId][customModeId ascii]`; 51 scuba, 61 freedive, 62 mermaiding | [driver] |
-| Heart rate | /Data `0F` (Ocean only) | u8 bpm | [driver] |
-| GPS fix | /Data `0B` | 20 B, includes absolute UTC ms | [driver] |
-| GPS accuracy | /Data `0E` | int8 deltas EHPE/EVPE | [driver] |
-| Battery | /Data `14` | int16 current, u16 mV, u8 % | [driver] |
+| Cylinder pressures | /Data `16` (extended status) | 18-byte slots from +42: `GasNumber int16, Pressure int32 Pa, Pressure2 int32 Pa, GasTime int32 s, Ventilation f32`; tank 0 Pressure at +44 | [driver] [schema] |
+| Second transmitter (sidemount) | /Data `16` slot `Pressure2` (+6 in the slot) | Pa; real only if non-zero twice | [driver] [schema] |
+| Gas time remaining | /Data `16` slot +10 | int32 s; -1 = not computed | [driver] [schema] |
+| Time to surface | /Data `16` | int64 at +22 (s); drivers read the low u16, which held every value in 12,632 records | [schema] [wire] |
+| NDL | /Data `16` | int64 at +30 (s); drivers read the low int16, which held every value in 12,632 records | [schema] [wire] |
+| Ceiling | /Data `16` | float32 at +38 (m) | [driver] [schema] |
+| GF99 / surface GF / leading tissue | /Data `16` | int32, int32, int8: at +186 / +190 / +194 in the 195-byte layout, +132 / +136 / +140 in the 141-byte layout. Leading tissue reads 0-5, so it isn't a GF percentage on this evidence; meaning not established. Not +78, the driver's offset: that's a cylinder GasNumber (2 in all 5,038 records). The driver reads only the 195-byte layout | [schema] [wire] |
+| `16` length | 195 B: 8 cylinder slots. 141 B: 5 slots, then the GF fields. The Nautic schema we hold is 195 B and the Ocean schema 141 B; the driver reports 141 B on the Nautic S | | [schema] [driver] |
+| Surface pressure | /Data `17` | 3 float32 at +2/+6/+10 (current, max, min), Pa | [driver] [schema] |
+| Activity / dive mode | /Data `08` | `[dt][ActivityType u8][CustomModeId utf8, NUL-terminated]`; the text was the same number on every entry here, so 6 B for `51` and 7 B for `100`. 51 scuba, 61 freedive, 62 mermaiding [driver]. 100 is on non-dive entries with no depth samples; meaning unknown | [schema] [wire] |
+| Heart rate | /Data `0F` (Ocean only) | u8 bpm | [driver] [schema] |
+| R-R intervals | /Data `10` u16; `11` array of int8 deltas, so its length varies | not read by the driver | [schema] |
+| GPS fix | /Data `0B` | 20 B: UTC local64 +2, Latitude +10 and Longitude +14 int32 (1e-7 deg), GPSAltitude u16 +18 (65535 = none) | [driver] [schema] |
+| GPS accuracy | /Data `0E` | int8 deltas EHPE +2, EVPE +3; Satellite5BestSNR u8 +4, NumberOfSatellites u8 +5 | [driver] [schema] |
+| Battery | /Data `14` | int16 current (raw/128 = mA), u16 mV, u8 % | [driver] [schema] |
 | IMU (accel/gyro/mag) | /Data group `23` (Nautic) / `22` (Ocean): the id is assigned in the watch's Descriptors GRP table, so look it up there rather than inferring it from payload size | 10 Hz. `[dt int16][AlgoRelativeTimestamp u32 ms][DiveRouteAcc XYZ][DiveRouteGyro XYZ][DiveRouteMagn XYZ]`, all int16 raw counts (the schema gives no scaling). Gyro x 1/131 = deg/s (~0.01 deg/s when still; scale and per-axis asymmetry untested). Accel x 1/4096 reads ~2% low: fitting per-axis scale + bias to ~6-7k near-still samples per watch (Sep 14 AM) gives scale x1.019-1.023 (axes within 0.3% of each other), bias up to ~11 mg, residual 7-8 mg; cross-axis terms add nothing. Magnetometer needs full hard/soft-iron calibration: offsets ~600-1,750 counts (larger than the ~750-860-count Earth field), axis gains up to 1.39 relative to X, 12-17% residual even after fitting; no accel or magnetometer calibration is exported (only the gyro bias) | [driver] [schema] [wire-derived] |
 | Dive-route features | /Data group `24` (Nautic) / `23` (Ocean) | 5 x uint16 `DiveRouteFeatures`, inputs to the app's dead reckoning; meanings unknown. The X/Y/Z route itself is computed by the app, not stored | [driver] [schema] |
 | Gyro bias | /Summary DiveFooter +17/+21/+25 (f32), FigureOfMerit +29 | `DiveRouteGyroBias`; units unclear (1.04/0.31/1.08 on the Nautic vs ~0.01 deg/s measured when still) | [schema] [unknown] |
-| Events | /Data `18` alarm, `19` warning, `1A` notify, `1B` state | `[dt][Type][Active]`. Type names from the per-dive schema (same on both watches; ids from the 2026-10 firmware): **alarm** 1 PO2 Low, 2 PO2 High, 3 Tank Pressure, 4 Gas Time, 5 Ascent Speed, 7 CNS100%, 8 OTU300, 10 Deco Stop Broken, 12 Deep Stop Broken, 13 Safety Stop Broken, 31 Depth, 50 Battery; **warning** 6 User PO2 High, 14 CNS80%, 15 OTU250, 20 NoDecoTime, 28 User Tank Pressure, 29 User Gas Time, 30 Sidemount, 31 Depth, 32 Dive Time, 42 User Ndl, 44 Recovery time, 50 Battery; **notify** 11 Gas Switch, 21 Setpoint switch (Nautic only), 28 User Tank Pressure, 29 User Gas Time, 30 Sidemount, 31 Depth, 32 Dive Time, 41 Stop done, 42 User Ndl, 44 Recovery time, 60 Bearing set, 61 Bearing cleared, 62 Stopwatch started, 63 Stopwatch reset; **state** 19 Ndl exceeded, 35-37 At Deco / Deep / Safety Stop, 38-40 Deco / Deep / Safety Stop Ahead. Seen on a watch: alarm 3 Tank Pressure on at a deliberate valve shut-off and purge (the tank pressure sample dropped to the purged hose pressure) and off 10 s later, after the valve was reopened; notify 60/61 bearing set/cleared | [driver] [schema] [wire] |
-| Dive state | /Data `1C` | 0 idling, 1 diving, 2 recovering | [driver] |
-| Dive active flag | /Data `1E` | | [driver] |
+| Events | /Data `18` alarm, `19` warning, `1A` notify, `1B` state | `[dt][Type][Active]`. Type names from the per-dive schema (nearly the same on both watches: `1A` 21 Setpoint switch is only in the Nautic's; ids from the 2026-10 firmware): **alarm** 1 PO2 Low, 2 PO2 High, 3 Tank Pressure, 4 Gas Time, 5 Ascent Speed, 7 CNS100%, 8 OTU300, 10 Deco Stop Broken, 12 Deep Stop Broken, 13 Safety Stop Broken, 31 Depth, 50 Battery; **warning** 6 User PO2 High, 14 CNS80%, 15 OTU250, 20 NoDecoTime, 28 User Tank Pressure, 29 User Gas Time, 30 Sidemount, 31 Depth, 32 Dive Time, 42 User Ndl, 44 Recovery time, 50 Battery; **notify** 11 Gas Switch, 21 Setpoint switch (Nautic only), 28 User Tank Pressure, 29 User Gas Time, 30 Sidemount, 31 Depth, 32 Dive Time, 41 Stop done, 42 User Ndl, 44 Recovery time, 60 Bearing set, 61 Bearing cleared, 62 Stopwatch started, 63 Stopwatch reset; **state** 19 Ndl exceeded, 35-37 At Deco / Deep / Safety Stop, 38-40 Deco / Deep / Safety Stop Ahead. Seen on a watch: alarm 3 Tank Pressure on at a deliberate valve shut-off and purge (the tank pressure sample dropped to the purged hose pressure) and off 10 s later, after the valve was reopened; notify 60/61 bearing set/cleared | [driver] [schema] [wire] |
+| Dive state | /Data `1C` | 0 idling, 1 diving, 2 recovering | [driver] [schema] |
+| Dive active flag | /Data `1E` | bool | [driver] [schema] |
 | Dive-end reason | /Data `1D` (OOAM) | 1 Out of battery, 2 Ceiling broken, 3 SW crash, 4 Max depth, 5 Algorithm changed, 6 Gauge dive | [driver] [schema] |
-| Gas switch | /Data `1F` | int16 gas number (0-based = cylinder slot) | [driver] |
+| Gas switch | /Data `1F` | int16 gas number (0-based = cylinder slot) | [driver] [schema] |
 | Gradient factors | /Summary | u16 at 0x33 (high) and 0x35 (low), from the SBEM signature | [driver] |
 | Water type | /Summary byte 0x3E (from the SBEM signature) | 0 fresh, 1 EN13319, 2 salt. Consistent on all 33 of my dives against the density fitted from `12`/`16`, and confirmed against the cloud `DiveHeader.WaterType` (Fresh/EN13319/Salt dives, 2026-10-04). Prior art: latishab already decodes it as DC_FIELD_SALINITY in libdivecomputer#73 (commit `cd3dbc890`, 2026-09-08), but the deepsealabs fork that libdc-swift ships does not | [wire-derived] [cloud] |
 | More /Summary fields (avg depth, tank start/end pressures per transmitter, temperatures, desat/no-fly, tissue) | /Summary | see 6.6 | [cloud-matched] |
-| Gas mixes | /Summary from 0xC7 | 45-byte record per gas: O2% +1, He% +2, PO2 max float32 +5, cylinder volume float32 m^3 +9; record index = GasNumber = cylinder slot | [driver] |
+| Gas mixes | /Summary from 0xC7 | 45-byte record per gas: O2% int16 +1, He% int16 +3, PO2 max float32 +5, cylinder volume float32 m^3 +9; record index = GasNumber = cylinder slot | [driver] [schema] |
 | Daily trend data | `/Activity/TrendData`: GET, then FETCH with one parameter `[01][08 00][since u64 ms]` (type 8); reply 202 with a page of records | 40-byte records every 10 min, each starting with a u64 ms timestamp. On the Ocean (2026-10-08) "since 0" returned records from 2026-10-01 00:30 UTC, ~7.8 days back: **about one week kept on the watch**. A since of 2026-01-01 returned 416 | [wire] |
 | Sleep timeline | `/Daily/Sleep/Timeline/Data`: the app's FETCH names a file (`mdsSlp.sbm`) and the watch answers 201 Created, i.e. it **writes an export file** that the app then reads via `/Dev/FileSystem` | not read-only; not used by our tools | [app] |
 | Activity history | `/Activity/History/App/LastFourWeeks`: plain GET + FETCH, 78-byte reply | format unknown. Two Ocean reads 10 days apart (2026-10-08, 10-18, chores and bucket dives in between): the first 54 bytes stayed identical (u32 values 2, 8, 0, 0, 4, 40, 51, 0, 4, 56; 51 is the dive ActivityType), the remaining f32 values changed (e.g. 52509.4 -> 8699.2, 3335.5, 8665.6, 2399.4), perhaps per-week totals | [wire] |
