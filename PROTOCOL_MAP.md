@@ -780,11 +780,20 @@ Each DATA content is one page: `[header:11][data][crc:4]`.
 offset  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 | 28 ...
        A5 01 2D 01 00 00 F0 24 0E 01 80 00 02 24 22 25 00 00 00 00 16 01 00 10 0C 00 00 00 | payload
        ^ opcode 01, msgid 0000, handle F0 24 0E            payload size u16 = 0x0116 (278) ^
+       struct LogDataNotification: offset u32 (16-19), count u16 (20-21), padding (22-23),
+       data offset u32 (24-27)
 ```
 - Header bytes 16-19 (u32 LE) are the chunk's **offset in the compressed stream**: each chunk's
   offset = the previous offset + the previous payload size (verified on every chunk of a
   Nautic and two Ocean downloads, 4,341 / 5,407 / 192 chunks). Described first by Max in
   libdivecomputer/libdivecomputer#70. [wire]
+- Bytes 20-21 are the array's count (the payload size). Bytes 22-23 are **struct padding**
+  after it, copied out uncleared like the gap bytes of the Entries pages: they take 50
+  different values in 99,928 chunks (4 captures, Nautic and Ocean, iPhone and iPad), and the
+  same dive read by the Suunto app and by another client 46 s apart differs only there
+  (2026-11-14, 96 chunks). Not data: don't expect them to match between reads. Bytes 24-27 are
+  the array's data offset, counted from the start of the struct at byte 16: always 12
+  (`0C 00 00 00`) in those chunks, so the payload starts at byte 28. [wire]
 - **End of stream:** the last chunk has payload size **0**, at an offset equal to the total
   compressed length (e.g. 1,502,475 on an Ocean dive, exactly what the driver captured), and
   the watch sends it **twice** (byte-identical; exactly two at 136 of 136 stream ends in 14 iPhone
