@@ -643,6 +643,10 @@ then the Suunto app (3.15.0) on an iPhone (Ocean, fw 2.51.28) and an iPad (Nauti
 - **GETs are dropped while another client's `/Data` stream is sending, but a PUT can be answered.** During
   our stream the Suunto app's GET `/Info` went unanswered three times in a row, 3 s apart, while in a later
   run its PUT was answered `07` 200 in the middle of our stream (2026-11-05, Ocean). [wire]
+- **An idle client receives every chunk of another client's `/Data` stream.** After a second client on the
+  same link streamed a 784 KB dive, 2,827 notifications were waiting for the idle one, one per chunk.
+  libdc-swift's BLE iostream has no purge, so a driver must read these off before its next request, or it
+  takes the last of them for live traffic (2026-11-17, Ocean, Mac). [wire]
 - **The Suunto app's retry cycle when starved** (Ocean, 2026-11-05): Hello, `/System/Mode`,
   `/Device/System/Mode`, `/Meta/Hash`, two FETCHes, then GET `/Info` x3 (3 s apart, unanswered while our
   stream ran), then a new Hello: about every 11 s, 14 Hellos in 2.5 minutes. A Hello that lands on a
